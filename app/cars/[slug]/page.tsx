@@ -1,6 +1,10 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getModelBySlug, getModelPhotos, getModelBuilds, getModelAccessories, getModelVideos, getModelGames, getModelBlocks } from '@/lib/data'
+import {
+  getModelBySlug, getModelPhotos, getModelBuilds, getModelAccessories,
+  getModelVideos, getModelGames, getModelBlocks,
+  getModelBuildCategories, getModelFitment, getModelSpecs, getModelAftermarketParts,
+} from '@/lib/data'
 import CarPageClient from './CarPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -27,13 +31,17 @@ export default async function CarPage({ params }: Props) {
   const model = await getModelBySlug(slug)
   if (!model) notFound()
 
-  const [photos, builds, accessories, videos, games, blocks] = await Promise.all([
+  const [photos, builds, accessories, videos, games, blocks, buildCategories, fitment, specs, aftermarketParts] = await Promise.all([
     getModelPhotos(model.id),
     getModelBuilds(model.id),
     getModelAccessories(model.id),
     getModelVideos(model.id),
     getModelGames(model.id),
     getModelBlocks(model.id),
+    getModelBuildCategories(model.id),
+    getModelFitment(model.id),
+    getModelSpecs(model.id),
+    getModelAftermarketParts(model.id),
   ])
 
   return (
@@ -45,6 +53,10 @@ export default async function CarPage({ params }: Props) {
       videos={videos}
       games={games}
       blocks={blocks}
+      buildCategories={buildCategories}
+      fitment={fitment}
+      specs={specs}
+      aftermarketParts={aftermarketParts}
     />
   )
 }

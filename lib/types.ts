@@ -139,3 +139,60 @@ export type NavLink = {
   label: string
   href: string
 }
+
+// ── v5 types ─────────────────────────────────────────────────
+
+export type BuildCategory = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  icon_ref: string | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
+}
+
+export type CarFitment = {
+  id: string
+  car_id: string
+  fitment_style: string | null
+  ride_height: string | null
+  camber_look: string | null
+  best_wheel_style: string | null
+  best_diameter: string | null
+  observed_rim_guess: string | null
+  popular_rim_option_1: string | null
+  popular_rim_option_2: string | null
+  summary: string | null
+  is_visible: boolean
+  updated_at: string
+}
+
+export type CarSpecs = {
+  id: string
+  car_id: string
+  wheel_size_oem: string | null
+  wheel_size_aftermarket: string | null
+  wheel_diameter_oem: string | null
+  wheel_diameter_aftermarket: string | null
+  tire_size_oem: string | null
+  tire_size_aftermarket: string | null
+  offset_oem: string | null
+  offset_aftermarket: string | null
+  notes: string | null
+  is_visible: boolean
+  updated_at: string
+}
+
+export type AftermarketPart = {
+  id: string
+  car_id: string
+  category: string | null
+  brand: string | null
+  part_name: string
+  note: string | null
+  sort_order: number
+  is_hidden: boolean
+  created_at: string
+}

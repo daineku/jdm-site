@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Model, GalleryPhoto, Brand, SiteSettings } from './types'
+import type { Model, GalleryPhoto, Brand, SiteSettings, BuildCategory, CarFitment, CarSpecs, AftermarketPart } from './types'
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   const { data } = await supabase.from('site_settings').select('*').single()
@@ -94,5 +94,49 @@ export async function getModelGames(carId: string) {
   const { data } = await supabase
     .from('racing_games').select('*')
     .eq('car_id', carId).eq('is_visible', true).order('sort_order')
+  return data || []
+}
+
+// ── v5: Build categories, fitment, specs, aftermarket parts ──
+
+export async function getModelBuildCategories(carId: string): Promise<BuildCategory[]> {
+  const { data } = await supabase
+    .from('car_build_categories')
+    .select('build_categories(*)')
+    .eq('car_id', carId)
+  if (!data) return []
+  return data
+    .map((row: any) => row.build_categories)
+    .filter(Boolean)
+    .sort((a: BuildCategory, b: BuildCategory) => a.sort_order - b.sort_order)
+}
+
+export async function getModelFitment(carId: string): Promise<CarFitment | null> {
+  const { data } = await supabase
+    .from('car_fitment')
+    .select('*')
+    .eq('car_id', carId)
+    .eq('is_visible', true)
+    .maybeSingle()
+  return data
+}
+
+export async function getModelSpecs(carId: string): Promise<CarSpecs | null> {
+  const { data } = await supabase
+    .from('car_specs')
+    .select('*')
+    .eq('car_id', carId)
+    .eq('is_visible', true)
+    .maybeSingle()
+  return data
+}
+
+export async function getModelAftermarketParts(carId: string): Promise<AftermarketPart[]> {
+  const { data } = await supabase
+    .from('car_aftermarket_parts')
+    .select('*')
+    .eq('car_id', carId)
+    .eq('is_hidden', false)
+    .order('sort_order')
   return data || []
 }

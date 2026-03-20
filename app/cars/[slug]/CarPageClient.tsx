@@ -1,6 +1,6 @@
 'use client'
 import Image from 'next/image'
-import type { Model, GalleryPhoto, Build, Accessory, Video, RacingGame, ModelBlock } from '@/lib/types'
+import type { Model, GalleryPhoto, Build, Accessory, Video, RacingGame, ModelBlock, BuildCategory, CarFitment, CarSpecs, AftermarketPart } from '@/lib/types'
 import { renderDescription } from '@/lib/renderDescription'
 
 type Props = {
@@ -11,12 +11,16 @@ type Props = {
   videos: Video[]
   games: RacingGame[]
   blocks: ModelBlock[]
+  buildCategories: BuildCategory[]
+  fitment: CarFitment | null
+  specs: CarSpecs | null
+  aftermarketParts: AftermarketPart[]
 }
 
 // Render order: gallery → description → builds/accessories/videos/games
 const DEFAULT_BLOCK_ORDER = ['gallery', 'builds', 'accessories', 'videos', 'racing_games']
 
-export default function CarPageClient({ model, photos, builds, accessories, videos, games, blocks }: Props) {
+export default function CarPageClient({ model, photos, builds, accessories, videos, games, blocks, buildCategories, fitment, specs, aftermarketParts }: Props) {
   const activeBlocks: string[] = []
   const seen = new Set<string>()
   const source = blocks.length > 0 ? blocks.map(b => b.block_type) : DEFAULT_BLOCK_ORDER
@@ -210,6 +214,38 @@ export default function CarPageClient({ model, photos, builds, accessories, vide
         {activeBlocks
           .filter(blockType => blockType !== 'gallery')
           .map((blockType, i) => renderBlock(blockType, `${blockType}-${i}`))}
+
+        {/* v5: Build Categories */}
+        {buildCategories.length > 0 && (
+          <Section id="build-style">
+            <SectionLabel>Build Style</SectionLabel>
+            <BuildCategoryCards categories={buildCategories} />
+          </Section>
+        )}
+
+        {/* v5: Rims & Fitment */}
+        {fitment && (fitment.fitment_style || fitment.ride_height || fitment.camber_look || fitment.summary || fitment.popular_rim_option_1) && (
+          <Section id="fitment">
+            <SectionLabel>Rims &amp; Fitment</SectionLabel>
+            <FitmentBlock fitment={fitment} />
+          </Section>
+        )}
+
+        {/* v5: Specs Table */}
+        {specs && (specs.wheel_size_oem || specs.wheel_size_aftermarket || specs.tire_size_oem || specs.tire_size_aftermarket || specs.offset_oem) && (
+          <Section id="specs">
+            <SectionLabel>Stock vs Aftermarket Specs</SectionLabel>
+            <SpecsTable specs={specs} />
+          </Section>
+        )}
+
+        {/* v5: Aftermarket Mods */}
+        {aftermarketParts.length > 0 && (
+          <Section id="mods">
+            <SectionLabel>Aftermarket Mods</SectionLabel>
+            <ModsList parts={aftermarketParts} />
+          </Section>
+        )}
       </div>
     </main>
   )
@@ -322,4 +358,165 @@ function getTikTokId(url: string): string {
     const match = url.match(/video\/(\d+)/)
     return match ? match[1] : ''
   } catch { return '' }
+}
+
+// ── v5: Build Category Cards ────────────────────────────────
+function BuildCategoryCards({ categories }: { categories: BuildCategory[] }) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      {categories.map(cat => (
+        <div
+          key={cat.id}
+          style={{
+            background: '#111',
+            border: '1px solid #1e3a1e',
+            borderRadius: 4,
+            padding: '10px 16px',
+          }}
+        >
+          <p style={{ color: '#39FF14', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', margin: 0 }}>
+            {cat.name}
+          </p>
+          {cat.description && (
+            <p style={{ color: '#555', fontSize: 11, marginTop: 4, lineHeight: 1.4, maxWidth: 200 }}>
+              {cat.description}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── v5: Fitment Block ───────────────────────────────────────
+function FitmentBlock({ fitment }: { fitment: CarFitment }) {
+  const specs = [
+    { label: 'Fitment Style', value: fitment.fitment_style },
+    { label: 'Ride Height', value: fitment.ride_height },
+    { label: 'Camber', value: fitment.camber_look },
+    { label: 'Best Wheel Style', value: fitment.best_wheel_style },
+    { label: 'Best Diameter', value: fitment.best_diameter },
+  ].filter(s => s.value)
+
+  const rims = [
+    { label: 'In Photo', value: fitment.observed_rim_guess },
+    { label: 'Popular #1', value: fitment.popular_rim_option_1 },
+    { label: 'Popular #2', value: fitment.popular_rim_option_2 },
+  ].filter(r => r.value)
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }} className="md:grid-cols-2">
+      {specs.length > 0 && (
+        <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 3, padding: '16px 20px' }}>
+          <p style={{ fontSize: 10, color: '#555', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+            Visual Assessment
+          </p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {specs.map(sp => (
+              <div key={sp.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #181818', paddingBottom: 6 }}>
+                <span style={{ fontSize: 11, color: '#555' }}>{sp.label}</span>
+                <span style={{ fontSize: 12, color: '#ccc', fontWeight: 600 }}>{sp.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {rims.length > 0 && (
+        <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 3, padding: '16px 20px' }}>
+          <p style={{ fontSize: 10, color: '#555', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+            Wheel References
+          </p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {rims.map(r => (
+              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #181818', paddingBottom: 6 }}>
+                <span style={{ fontSize: 11, color: '#555' }}>{r.label}</span>
+                <span style={{ fontSize: 12, color: '#39FF14', fontWeight: 600 }}>{r.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {fitment.summary && (
+        <div
+          style={{ background: '#0d0d0d', border: '1px solid #181818', borderRadius: 3, padding: '16px 20px' }}
+          className={specs.length > 0 && rims.length > 0 ? 'md:col-span-2' : ''}
+        >
+          <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7, fontStyle: 'italic' }}>
+            {fitment.summary}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── v5: Specs Table ─────────────────────────────────────────
+function SpecsTable({ specs }: { specs: CarSpecs }) {
+  const rows: { label: string; oem: string | null; am: string | null }[] = [
+    { label: 'Wheel Size', oem: specs.wheel_size_oem, am: specs.wheel_size_aftermarket },
+    { label: 'Wheel Diameter', oem: specs.wheel_diameter_oem, am: specs.wheel_diameter_aftermarket },
+    { label: 'Tire Size', oem: specs.tire_size_oem, am: specs.tire_size_aftermarket },
+    { label: 'Offset', oem: specs.offset_oem, am: specs.offset_aftermarket },
+  ].filter(r => r.oem || r.am)
+
+  if (rows.length === 0) return null
+
+  return (
+    <div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, color: '#444', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: '1px solid #1e1e1e', width: '30%' }}>Spec</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, color: '#444', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: '1px solid #1e1e1e' }}>OEM / Stock</th>
+              <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, color: '#39FF14', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: '1px solid #1e1e1e' }}>Aftermarket</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={row.label} style={{ background: i % 2 === 0 ? '#0d0d0d' : '#111' }}>
+                <td style={{ padding: '10px 12px', color: '#666', fontWeight: 600, fontSize: 12, borderBottom: '1px solid #181818' }}>{row.label}</td>
+                <td style={{ padding: '10px 12px', color: '#aaa', borderBottom: '1px solid #181818' }}>{row.oem || <span style={{ color: '#333' }}>—</span>}</td>
+                <td style={{ padding: '10px 12px', color: row.am ? '#39FF14' : '#333', borderBottom: '1px solid #181818' }}>{row.am || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {specs.notes && (
+        <p style={{ marginTop: 10, fontSize: 12, color: '#555', fontStyle: 'italic' }}>{specs.notes}</p>
+      )}
+    </div>
+  )
+}
+
+// ── v5: Aftermarket Mods List ───────────────────────────────
+function ModsList({ parts }: { parts: AftermarketPart[] }) {
+  const grouped: Record<string, AftermarketPart[]> = {}
+  for (const p of parts) {
+    const cat = p.category || 'Other'
+    if (!grouped[cat]) grouped[cat] = []
+    grouped[cat].push(p)
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }} className="md:grid-cols-2">
+      {Object.entries(grouped).map(([cat, items]) => (
+        <div key={cat} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 3, padding: '14px 18px' }}>
+          <p style={{ fontSize: 10, color: '#39FF14', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>{cat}</p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {items.map(p => (
+              <li key={p.id} style={{ padding: '6px 0', borderBottom: '1px solid #181818', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ color: '#ccc', fontSize: 13, fontWeight: 600 }}>{p.part_name}</span>
+                  {p.brand && <span style={{ color: '#555', fontSize: 11 }}>{p.brand}</span>}
+                </div>
+                {p.note && <span style={{ color: '#444', fontSize: 11, fontStyle: 'italic' }}>{p.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )
 }

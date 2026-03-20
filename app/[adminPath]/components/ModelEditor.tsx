@@ -10,6 +10,10 @@ type Build = { id: string; title: string; description: string | null; is_visible
 type Video = { id: string; tiktok_url: string; embed_id: string | null; title: string | null; sort_order: number; is_visible: boolean }
 type Game = { id: string; game_title: string; game_logo_url: string | null; description: string | null; external_url: string | null; sort_order: number; is_visible: boolean }
 type Block = { id: string; block_type: string; title: string | null; sort_order: number; is_visible: boolean; config: Record<string, any> }
+type BuildCategory = { id: string; name: string; slug: string; description: string | null }
+type Fitment = { id?: string; car_id?: string; fitment_style: string; ride_height: string; camber_look: string; best_wheel_style: string; best_diameter: string; observed_rim_guess: string; popular_rim_option_1: string; popular_rim_option_2: string; summary: string; is_visible: boolean }
+type CarSpecs = { id?: string; car_id?: string; wheel_size_oem: string; wheel_size_aftermarket: string; wheel_diameter_oem: string; wheel_diameter_aftermarket: string; tire_size_oem: string; tire_size_aftermarket: string; offset_oem: string; offset_aftermarket: string; notes: string; is_visible: boolean }
+type AftermarketPart = { id: string; car_id: string; category: string | null; brand: string | null; part_name: string; note: string | null; sort_order: number; is_hidden: boolean }
 
 const EMPTY_CAR = { title: '', slug: '', description: '', subtitle: '', brand: '', brand_id: '', cover_image: '', is_published: true, sort_order: 0, seo_title: '', seo_description: '' }
 const autoSlug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -200,13 +204,17 @@ function ModelDetail({ car, brands, adminSecret, onBack, onUpdate, onToast }: {
   onBack: () => void; onUpdate: (car: Car) => void
   onToast: (msg: string, type?: 'success' | 'error') => void
 }) {
-  type DetailTab = 'info' | 'gallery' | 'builds' | 'videos' | 'games' | 'blocks'
+  type DetailTab = 'info' | 'gallery' | 'builds' | 'videos' | 'games' | 'blocks' | 'style' | 'fitment' | 'specs' | 'mods'
   const [activeTab, setActiveTab] = useState<DetailTab>('gallery')
   const [editing, setEditing] = useState(false)
 
   const DETAIL_TABS: { key: DetailTab; label: string }[] = [
     { key: 'gallery', label: 'Gallery' },
     { key: 'builds', label: 'Builds' },
+    { key: 'style', label: 'Style' },
+    { key: 'fitment', label: 'Fitment' },
+    { key: 'specs', label: 'Specs' },
+    { key: 'mods', label: 'Mods' },
     { key: 'videos', label: 'Videos' },
     { key: 'games', label: 'Games' },
     { key: 'blocks', label: 'Blocks' },
@@ -256,6 +264,10 @@ function ModelDetail({ car, brands, adminSecret, onBack, onUpdate, onToast }: {
       )}
       {activeTab === 'gallery' && <ModelGallery carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
       {activeTab === 'builds' && <ModelBuilds carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
+      {activeTab === 'style' && <ModelBuildCategories carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
+      {activeTab === 'fitment' && <ModelFitment carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
+      {activeTab === 'specs' && <ModelSpecs carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
+      {activeTab === 'mods' && <ModelAftermarketParts carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
       {activeTab === 'videos' && <ModelVideos carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
       {activeTab === 'games' && <ModelGames carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
       {activeTab === 'blocks' && <ModelBlocks carId={car.id} adminSecret={adminSecret} onToast={onToast} />}
@@ -808,6 +820,327 @@ function ModelBlocks({ carId, adminSecret, onToast }: { carId: string; adminSecr
           <span style={{ fontSize: 10, color: MUTED, textTransform: 'uppercase' }}>{block.block_type}</span>
           <button style={s.badge(block.is_visible)} onClick={() => toggle(block)}>{block.is_visible ? 'Visible' : 'Hidden'}</button>
           <button style={s.btn('danger')} onClick={() => del(block.id)}>Del</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Build Categories (Style tab) ─────────────────────────────
+function ModelBuildCategories({ carId, adminSecret, onToast }: { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const [allCats, setAllCats] = useState<BuildCategory[]>([])
+  const [assigned, setAssigned] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      api('build-categories', 'GET', undefined, adminSecret).then((d: any) => d.categories || []),
+      api(`car-categories?car_id=${carId}`, 'GET', undefined, adminSecret).then((d: any) => d.assignments || []),
+    ]).then(([cats, asgn]) => {
+      setAllCats(cats)
+      setAssigned(new Set(asgn.map((a: any) => a.category_id)))
+    }).catch((e: any) => onToast(e.message, 'error'))
+    .finally(() => setLoading(false))
+  }, [carId, adminSecret]) // eslint-disable-line
+
+  const toggle = async (catId: string) => {
+    const isOn = assigned.has(catId)
+    try {
+      if (isOn) {
+        await api('car-categories', 'DELETE', { car_id: carId, category_id: catId }, adminSecret)
+        setAssigned(prev => { const s = new Set(prev); s.delete(catId); return s })
+      } else {
+        await api('car-categories', 'POST', { car_id: carId, category_id: catId }, adminSecret)
+        setAssigned(prev => new Set([...prev, catId]))
+      }
+    } catch (e: any) { onToast(e.message, 'error') }
+  }
+
+  if (loading) return <div style={{ color: MUTED, fontSize: 12, padding: 16 }}>Loading…</div>
+
+  return (
+    <div>
+      <div style={{ ...s.card, marginBottom: 6 }}>
+        <p style={{ fontSize: 11, color: MUTED, margin: '0 0 14px' }}>
+          Select all build styles that apply. Multiple categories allowed.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {allCats.map(cat => {
+            const on = assigned.has(cat.id)
+            return (
+              <div
+                key={cat.id}
+                onClick={() => toggle(cat.id)}
+                style={{
+                  background: on ? '#0a1a0a' : '#0d0d0d',
+                  border: `1px solid ${on ? '#1e4d1e' : '#1e1e1e'}`,
+                  borderRadius: 3,
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: 2, background: on ? G : '#222', border: `1px solid ${on ? G : '#333'}`, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: on ? G : '#aaa' }}>{cat.name}</span>
+                </div>
+                {cat.description && (
+                  <p style={{ fontSize: 10, color: MUTED, margin: '5px 0 0 20px', lineHeight: 1.4 }}>{cat.description}</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {assigned.size > 0 && (
+          <p style={{ fontSize: 10, color: G, marginTop: 14, letterSpacing: '0.06em' }}>
+            {assigned.size} categor{assigned.size === 1 ? 'y' : 'ies'} selected
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Rims & Fitment ───────────────────────────────────────────
+const EMPTY_FITMENT: Fitment = { fitment_style: '', ride_height: '', camber_look: '', best_wheel_style: '', best_diameter: '', observed_rim_guess: '', popular_rim_option_1: '', popular_rim_option_2: '', summary: '', is_visible: true }
+const FITMENT_STYLE_OPTIONS = ['', 'Flush', 'Poke', 'Tuck', 'Stock']
+const RIDE_HEIGHT_OPTIONS = ['', 'Slammed', 'Low', 'Moderate', 'Stock', 'Lifted']
+const CAMBER_OPTIONS = ['', 'Aggressive', 'Street', 'Slight', 'None']
+const WHEEL_STYLE_OPTIONS = ['', 'Mesh', 'Deep Dish', 'Multi-Spoke', 'Spoke', 'Solid', 'Forged Monoblock']
+
+function ModelFitment({ carId, adminSecret, onToast }: { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const [form, setForm] = useState<Fitment>(EMPTY_FITMENT)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    api(`car-fitment?car_id=${carId}`, 'GET', undefined, adminSecret)
+      .then((d: any) => {
+        if (d.fitment) {
+          setForm({
+            fitment_style: d.fitment.fitment_style || '',
+            ride_height: d.fitment.ride_height || '',
+            camber_look: d.fitment.camber_look || '',
+            best_wheel_style: d.fitment.best_wheel_style || '',
+            best_diameter: d.fitment.best_diameter || '',
+            observed_rim_guess: d.fitment.observed_rim_guess || '',
+            popular_rim_option_1: d.fitment.popular_rim_option_1 || '',
+            popular_rim_option_2: d.fitment.popular_rim_option_2 || '',
+            summary: d.fitment.summary || '',
+            is_visible: d.fitment.is_visible ?? true,
+          })
+        }
+      })
+      .catch((e: any) => onToast(e.message, 'error'))
+      .finally(() => setLoading(false))
+  }, [carId, adminSecret]) // eslint-disable-line
+
+  const set = (k: keyof Fitment, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const save = async () => {
+    setSaving(true)
+    try { await api('car-fitment', 'PUT', { car_id: carId, ...form }, adminSecret); onToast('Fitment saved') }
+    catch (e: any) { onToast(e.message, 'error') }
+    finally { setSaving(false) }
+  }
+
+  if (loading) return <div style={{ color: MUTED, fontSize: 12, padding: 16 }}>Loading…</div>
+  const selOpts = (opts: string[]) => opts.map(o => <option key={o} value={o}>{o || '— not set —'}</option>)
+
+  return (
+    <div>
+      <div style={s.card}>
+        <p style={s.secTitle}>Visual Assessment</p>
+        <div style={s.g2}>
+          <Field label="Fitment Style"><select style={s.select} value={form.fitment_style} onChange={e => set('fitment_style', e.target.value)}>{selOpts(FITMENT_STYLE_OPTIONS)}</select></Field>
+          <Field label="Ride Height"><select style={s.select} value={form.ride_height} onChange={e => set('ride_height', e.target.value)}>{selOpts(RIDE_HEIGHT_OPTIONS)}</select></Field>
+          <Field label="Camber Look"><select style={s.select} value={form.camber_look} onChange={e => set('camber_look', e.target.value)}>{selOpts(CAMBER_OPTIONS)}</select></Field>
+          <Field label="Best Wheel Style"><select style={s.select} value={form.best_wheel_style} onChange={e => set('best_wheel_style', e.target.value)}>{selOpts(WHEEL_STYLE_OPTIONS)}</select></Field>
+          <Field label="Best Diameter (recommended)"><input style={s.input} value={form.best_diameter} onChange={e => set('best_diameter', e.target.value)} placeholder='e.g. 17" or 18"' /></Field>
+        </div>
+        <p style={{ ...s.secTitle, marginTop: 18 }}>Wheel Identification</p>
+        <div style={s.g2}>
+          <Field label="Rim in Photo (guess)"><input style={s.input} value={form.observed_rim_guess} onChange={e => set('observed_rim_guess', e.target.value)} placeholder="e.g. Enkei RPF1" /></Field>
+          <Field label="Popular Option 1"><input style={s.input} value={form.popular_rim_option_1} onChange={e => set('popular_rim_option_1', e.target.value)} placeholder="e.g. Volk TE37" /></Field>
+          <Field label="Popular Option 2"><input style={s.input} value={form.popular_rim_option_2} onChange={e => set('popular_rim_option_2', e.target.value)} placeholder="e.g. Work Emotion CR Kai" /></Field>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <Field label="Editorial Summary">
+            <textarea style={{ ...s.textarea, minHeight: 80 }} value={form.summary} onChange={e => set('summary', e.target.value)} placeholder="A few editorial sentences about the fitment…" />
+          </Field>
+        </div>
+        <div style={{ ...s.row, marginTop: 16, justifyContent: 'space-between' }}>
+          <div style={s.row}><Toggle value={form.is_visible} onChange={v => set('is_visible', v)} /><span style={{ fontSize: 11, color: MUTED }}>Show on page</span></div>
+          <button style={s.btn('green')} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Fitment'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Specs Table ──────────────────────────────────────────────
+const EMPTY_SPECS: CarSpecs = { wheel_size_oem: '', wheel_size_aftermarket: '', wheel_diameter_oem: '', wheel_diameter_aftermarket: '', tire_size_oem: '', tire_size_aftermarket: '', offset_oem: '', offset_aftermarket: '', notes: '', is_visible: true }
+
+function ModelSpecs({ carId, adminSecret, onToast }: { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const [form, setForm] = useState<CarSpecs>(EMPTY_SPECS)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    api(`car-specs?car_id=${carId}`, 'GET', undefined, adminSecret)
+      .then((d: any) => {
+        if (d.specs) {
+          setForm({
+            wheel_size_oem: d.specs.wheel_size_oem || '', wheel_size_aftermarket: d.specs.wheel_size_aftermarket || '',
+            wheel_diameter_oem: d.specs.wheel_diameter_oem || '', wheel_diameter_aftermarket: d.specs.wheel_diameter_aftermarket || '',
+            tire_size_oem: d.specs.tire_size_oem || '', tire_size_aftermarket: d.specs.tire_size_aftermarket || '',
+            offset_oem: d.specs.offset_oem || '', offset_aftermarket: d.specs.offset_aftermarket || '',
+            notes: d.specs.notes || '', is_visible: d.specs.is_visible ?? true,
+          })
+        }
+      })
+      .catch((e: any) => onToast(e.message, 'error'))
+      .finally(() => setLoading(false))
+  }, [carId, adminSecret]) // eslint-disable-line
+
+  const set = (k: keyof CarSpecs, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const save = async () => {
+    setSaving(true)
+    try { await api('car-specs', 'PUT', { car_id: carId, ...form }, adminSecret); onToast('Specs saved') }
+    catch (e: any) { onToast(e.message, 'error') }
+    finally { setSaving(false) }
+  }
+
+  if (loading) return <div style={{ color: MUTED, fontSize: 12, padding: 16 }}>Loading…</div>
+
+  const ROWS: { label: string; oem: keyof CarSpecs; am: keyof CarSpecs; ph?: string }[] = [
+    { label: 'Wheel Size', oem: 'wheel_size_oem', am: 'wheel_size_aftermarket', ph: 'e.g. 15×6' },
+    { label: 'Wheel Diameter', oem: 'wheel_diameter_oem', am: 'wheel_diameter_aftermarket', ph: 'e.g. 15"' },
+    { label: 'Tire Size', oem: 'tire_size_oem', am: 'tire_size_aftermarket', ph: 'e.g. 205/50R15' },
+    { label: 'Offset', oem: 'offset_oem', am: 'offset_aftermarket', ph: 'e.g. +45' },
+  ]
+
+  return (
+    <div>
+      <div style={s.card}>
+        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div /><span style={{ ...s.label, margin: 0 }}>OEM / Stock</span><span style={{ ...s.label, margin: 0 }}>Aftermarket</span>
+        </div>
+        {ROWS.map(row => (
+          <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', gap: 10, marginBottom: 10, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: '#888', fontWeight: 600 }}>{row.label}</span>
+            <input style={s.input} value={form[row.oem] as string} onChange={e => set(row.oem, e.target.value)} placeholder={row.ph} />
+            <input style={s.input} value={form[row.am] as string} onChange={e => set(row.am, e.target.value)} placeholder={row.ph} />
+          </div>
+        ))}
+        <div style={{ marginTop: 10 }}>
+          <Field label="Notes (optional)"><input style={s.input} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="e.g. OEM+ fitment on factory 15s…" /></Field>
+        </div>
+        <div style={{ ...s.row, marginTop: 16, justifyContent: 'space-between' }}>
+          <div style={s.row}><Toggle value={form.is_visible} onChange={v => set('is_visible', v)} /><span style={{ fontSize: 11, color: MUTED }}>Show on page</span></div>
+          <button style={s.btn('green')} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Specs'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Aftermarket Parts (Mods tab) ─────────────────────────────
+const PART_CATEGORIES = ['Body Kit', 'Aero', 'Exhaust', 'Suspension', 'Wheels', 'Interior', 'Engine', 'Brakes', 'Lighting', 'Other']
+
+function ModelAftermarketParts({ carId, adminSecret, onToast }: { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const [parts, setParts] = useState<AftermarketPart[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<string | null>(null)
+  const emptyForm = { category: '', brand: '', part_name: '', note: '', sort_order: 0, is_hidden: false }
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    try {
+      const d = await api(`car-aftermarket-parts?car_id=${carId}`, 'GET', undefined, adminSecret)
+      setParts(d.parts || [])
+    } catch (e: any) { onToast(e.message, 'error') }
+    finally { setLoading(false) }
+  }, [carId, adminSecret]) // eslint-disable-line
+
+  useEffect(() => { load() }, [carId]) // eslint-disable-line
+
+  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+
+  const save = async () => {
+    if (!form.part_name.trim()) { onToast('Part name is required', 'error'); return }
+    setSaving(true)
+    try {
+      const payload = { ...form, car_id: carId, sort_order: form.sort_order ?? parts.length * 10 }
+      if (editing) {
+        const d = await api('car-aftermarket-parts', 'PUT', { id: editing, ...payload }, adminSecret)
+        setParts(prev => prev.map(p => p.id === editing ? d.part : p))
+      } else {
+        const d = await api('car-aftermarket-parts', 'POST', payload, adminSecret)
+        setParts(prev => [...prev, d.part])
+      }
+      setForm(emptyForm); setEditing(null); onToast('Saved')
+    } catch (e: any) { onToast(e.message, 'error') }
+    finally { setSaving(false) }
+  }
+
+  const del = async (id: string) => {
+    if (!confirm('Delete this part?')) return
+    try { await api('car-aftermarket-parts', 'DELETE', { id }, adminSecret); setParts(prev => prev.filter(p => p.id !== id)); onToast('Deleted') }
+    catch (e: any) { onToast(e.message, 'error') }
+  }
+
+  const edit = (p: AftermarketPart) => {
+    setForm({ category: p.category || '', brand: p.brand || '', part_name: p.part_name, note: p.note || '', sort_order: p.sort_order, is_hidden: p.is_hidden })
+    setEditing(p.id)
+  }
+
+  const toggleHidden = async (p: AftermarketPart) => {
+    try {
+      await api('car-aftermarket-parts', 'PUT', { id: p.id, is_hidden: !p.is_hidden }, adminSecret)
+      setParts(prev => prev.map(x => x.id === p.id ? { ...x, is_hidden: !x.is_hidden } : x))
+    } catch (e: any) { onToast(e.message, 'error') }
+  }
+
+  if (loading) return <div style={{ color: MUTED, fontSize: 12, padding: 16 }}>Loading…</div>
+
+  return (
+    <div>
+      <div style={s.card}>
+        <p style={{ ...s.secTitle, margin: '0 0 14px' }}>{editing ? 'Edit Part' : 'Add Aftermarket Part'}</p>
+        <div style={s.g2}>
+          <Field label="Category">
+            <select style={s.select} value={form.category} onChange={e => set('category', e.target.value)}>
+              <option value="">— Select —</option>
+              {PART_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Field>
+          <Field label="Brand"><input style={s.input} value={form.brand} onChange={e => set('brand', e.target.value)} placeholder="e.g. Rocket Bunny" /></Field>
+          <Field label="Part Name *"><input style={s.input} value={form.part_name} onChange={e => set('part_name', e.target.value)} placeholder="e.g. V1 Widebody Kit" /></Field>
+          <Field label="Sort Order"><input style={s.input} type="number" value={form.sort_order} onChange={e => set('sort_order', parseInt(e.target.value) || 0)} /></Field>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <Field label="Note (optional)"><input style={s.input} value={form.note} onChange={e => set('note', e.target.value)} placeholder="Short note or fitment detail…" /></Field>
+        </div>
+        <div style={{ ...s.row, marginTop: 14, justifyContent: 'space-between' }}>
+          <div style={s.row}><Toggle value={!form.is_hidden} onChange={v => set('is_hidden', !v)} /><span style={{ fontSize: 11, color: MUTED }}>Visible</span></div>
+          <div style={s.row}>
+            {editing && <button style={s.btn()} onClick={() => { setForm(emptyForm); setEditing(null) }}>Cancel</button>}
+            <button style={s.btn('green')} onClick={save} disabled={saving}>{saving ? 'Saving…' : editing ? 'Update' : 'Add Part'}</button>
+          </div>
+        </div>
+      </div>
+      {parts.length === 0 && !editing && <EmptyState message="No parts yet. Add visible modifications above." />}
+      {parts.map(p => (
+        <div key={p.id} style={s.listItem}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontWeight: 600, fontSize: 12 }}>{p.part_name}</span>
+            {p.brand && <span style={{ fontSize: 10, color: MUTED, marginLeft: 8 }}>{p.brand}</span>}
+            {p.category && <span style={{ fontSize: 10, color: '#444', marginLeft: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.category}</span>}
+          </div>
+          <button style={s.badge(!p.is_hidden)} onClick={() => toggleHidden(p)}>{p.is_hidden ? 'Hidden' : 'Visible'}</button>
+          <button style={s.btn()} onClick={() => edit(p)}>Edit</button>
+          <button style={s.btn('danger')} onClick={() => del(p.id)}>Del</button>
         </div>
       ))}
     </div>
