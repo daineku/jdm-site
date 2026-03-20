@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --jdm-green: #39FF14;
+  --jdm-green-dim: #2bcc0f;
+  --jdm-green-glow: rgba(57, 255, 20, 0.15);
+  --jdm-green-border: rgba(57, 255, 20, 0.4);
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-card: #141414;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --border-color: #222222;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Manrope', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--jdm-green);
+  color: #000;
+}
+
+a {
+  color: var(--jdm-green);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* Photo cards must not inherit the a:hover opacity — it causes full-card flicker */
+a.pgrid-card:hover,
+a.pgrid-card:hover * {
+  opacity: 1 !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--jdm-green-dim);
+}
+
+/* Parallax base */
+.parallax-section {
+  will-change: transform;
+}
+
+/* Card hover */
+.card-hover {
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  border: 1px solid transparent;
+}
+.card-hover:hover {
+  border-color: var(--jdm-green);
+  box-shadow: 0 0 20px var(--jdm-green-glow), 0 0 40px rgba(57, 255, 20, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Nav active */
+.nav-link {
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.nav-link:hover,
+.nav-link.active {
+  color: var(--jdm-green);
+}
+
+/* Masonry grid */
+.masonry-grid {
+  column-gap: 12px;
+}
+.masonry-grid-column {
+  background-clip: padding-box;
+}
+.masonry-item {
+  margin-bottom: 12px;
+  break-inside: avoid;
+}
+
+/* Loader speedometer */
+@keyframes spin-needle {
+  0%   { transform: rotate(-130deg); }
+  100% { transform: rotate(100deg); }
+}
+.speedometer-needle {
+  transform-origin: 50% 80%;
+  animation: spin-needle 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+/* Fade in */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Green button */
+.btn-jdm {
+  background: transparent;
+  border: 1px solid var(--jdm-green-border);
+  color: var(--jdm-green);
+  padding: 8px 20px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 2px;
+}
+.btn-jdm:hover {
+  background: var(--jdm-green-glow);
+  box-shadow: 0 0 12px var(--jdm-green-glow);
+}
+
+/* PhotoGrid inner card dimensions — using CSS classes so media queries can override */
+.pgrid-inner--v { aspect-ratio: 2 / 3; }
+.pgrid-inner--h { aspect-ratio: 4 / 3; }
+
+/* Mobile: change horizontal cards from 4:3 (squat/small) to 1:1 (square/taller).
+   This doubles the height of horizontal cards on small screens, filling the viewport
+   better and creating the denser feed feel intended for the 3-column mobile layout. */
+@media (max-width: 639px) {
+  .pgrid-inner--h { aspect-ratio: 1 / 1; }
+}
+
+/* ── Model page gallery ────────────────────────────────────────────────── */
+/* Strict 3-column grid. No masonry, no JS relayout.                       */
+/* Images: width:100% height:auto — natural proportions, no framing.       */
+.mgallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  align-items: start;  /* rows don't force equal height — natural image heights */
+}
+
+/* Vertical and default: span 1 */
+/* Model page gallery items: no hover visual effect */
+.mgallery-item { /* static — no filter, no transition */ }
+
+/* Normal horizontal: span 2 */
+.mgallery-h { grid-column: span 2; }
+
+/* Lone horizontal: full row, image centered at 2/3 width */
+.mgallery-lone-h { grid-column: 1 / -1; }
+.mgallery-lone-h img { max-width: 66.666%; margin: 0 auto; }
+
+/* Mobile overrides */
+@media (max-width: 639px) {
+  .mgallery-h         { grid-column: 1 / -1; }
+  .mgallery-lone-h img { max-width: 100%; }
+}
