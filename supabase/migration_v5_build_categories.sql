@@ -83,16 +83,17 @@ ALTER TABLE car_fitment           DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_specs             DISABLE ROW LEVEL SECURITY;
 ALTER TABLE car_aftermarket_parts DISABLE ROW LEVEL SECURITY;
 
--- ── 7. Seed a handful of default build categories ───────────
-INSERT INTO build_categories (name, slug, description, sort_order) VALUES
-  ('Stance',     'stance',     'Low ride height, aggressive fitment, street presence',            10),
-  ('Track',      'track',      'Performance-focused build with aero, cooling, and safety mods',   20),
-  ('Street',     'street',     'Daily-driver build with mild performance upgrades',               30),
-  ('Show',       'show',       'Detail-oriented build built for car shows and exhibitions',       40),
-  ('Drift',      'drift',      'Rear-wheel-drive setup tuned for controlled oversteer',           50),
-  ('Time Attack','time-attack','Lightweight, aero-optimised circuit build',                       60),
-  ('Restomod',   'restomod',   'Classic body with modern drivetrain or suspension upgrades',      70),
-  ('OEM+',       'oem-plus',   'Factory-correct appearance with subtle quality upgrades',         80)
+-- ── 7. Seed exactly 9 canonical build categories ────────────
+INSERT INTO build_categories (name, slug, description, sort_order, is_active) VALUES
+  ('OEM+',             'oem-plus',           'Factory-correct appearance with subtle quality upgrades',         10, true),
+  ('Clean JDM',        'clean-jdm',          'OEM-faithful JDM parts, clean fitment, no excess modification',  20, true),
+  ('Street Stance',    'street-stance',      'Street-driven low fitment with aggressive wheel stance',         30, true),
+  ('Show Stance',      'show-stance',        'Show-oriented extreme drop and fitment built for exhibitions',   40, true),
+  ('Track-Inspired',   'track-inspired',     'Performance aesthetics: aero, splitters, vented hoods',         50, true),
+  ('Time Attack Style','time-attack-style',  'Lightweight circuit-focused build with full aero and safety',   60, true),
+  ('Drift Build',      'drift-build',        'RWD setup tuned for sustained controlled oversteer',            70, true),
+  ('Bosozoku Style',   'bosozoku-style',     'Extreme exhaust pipes, exaggerated body extensions, gang roots', 80, true),
+  ('VIP Style',        'vip-style',          'Low-slung luxury sedans with deep-dish wheels and VIP trim',    90, true)
 ON CONFLICT (slug) DO NOTHING;
 
 -- ── Done ─────────────────────────────────────────────────────
