@@ -923,7 +923,12 @@ The divider's green line is low-contrast on near-black — it is placed on the i
 
 ### Fonts
 
-Space Grotesk (display) and Manrope (body) are self-hosted from `app/fonts/` via `next/font/local` (SIL OFL, licences alongside). **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build. The legacy Google `<link>` for Manrope stays because admin/legacy inline styles use the family name `Manrope`.
+No font is fetched from Google — at build time or runtime.
+
+- **Manrope** (body, admin, legacy pages, studio) — `@font-face` in `app/globals.css` under the real family name `Manrope`, files in `app/fonts/` (latin, latin-ext, cyrillic variable subsets — byte-identical to what Google Fonts served). Admin inline styles that say `fontFamily: 'Manrope'` keep working.
+- **Space Grotesk** (studio display) — `next/font/local` in `app/layout.tsx` (`--font-display`).
+- **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build.
+- `@font-face` must stay *after* `@import "tailwindcss"` (CSS `@import` must precede all other rules).
 
 ### Contact
 
@@ -933,6 +938,29 @@ Space Grotesk (display) and Manrope (body) are self-hosted from `app/fonts/` via
 
 `SpeedometerLoader` is deleted. `MasonryGallery` renders as soon as the first batch arrives (the fake progress interval and 250 ms delay are gone); first load shows a static skeleton; the infinite-scroll sentinel is an empty 96 px div. `fetchedCountRef` / `isFetchingRef` untouched.
 
-### Lint note
+### Admin header suppression (middleware)
 
-`npm run lint` fails before linting anything: `eslint.config.mjs` imports `eslint-config-next/core-web-vitals` (the v16 flat entry) but v15.3.6 is installed. Pre-existing; to lint today use `@eslint/eslintrc` `FlatCompat` with `next/core-web-vitals` + `next/typescript`.
+`middleware.ts` forwards `x-is-admin: 1` on the **request** (`NextResponse.next({ request: { headers } })`) for `/<ADMIN_SECRET_PATH>` and its sub-paths, and always deletes any client-supplied `x-is-admin` first. Previously it set the flag on the *response*: that only worked because the self-hosted Next router copies middleware response headers into the request (not a documented contract), any visitor could send `x-is-admin: 1` to strip the public header/footer, and the flag leaked to clients. Admin auth (`isAuthed`, `x-admin-secret`) is unchanged.
+
+### Quality gates (all enforced)
+
+| Command | Expectation |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors (4 accepted warnings: 3 admin `<img>`, 1 deliberate `exhaustive-deps` in MasonryGallery — "fixing" it changes fetch behaviour) |
+| `npm run test:description` | 13 passed |
+| `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
+| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390) |
+
+- `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
+- Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.
+- supabase-js has no generated DB types here, so it infers every embedded relation as an array. Many-to-one FK embeds are single objects at runtime — declare the row shape with `.overrideTypes<Row[], { merge: false }>()` (see `getModelBuildInstances`).
+- Smoke tests start `next start` with a random throwaway `ADMIN_SECRET_PATH` and mock `/api/photos`; they need no Supabase/R2 credentials. First run: `npx playwright install chromium`.
+
+### Known pre-existing issue (not changed)
+
+`lib/validation/build-instances.ts` — `BuildInstanceCreateSchema` / `UpdateSchema` do not declare `photo_ids`, and Zod strips unknown keys, so photos selected in the admin Builds tab are never linked through `/api/admin/car-build-instances`. Fixing it changes admin data writes, so it is left for a separate, deliberate change.
+
+### Missing model pages
+
+`/cars/<unknown>` renders the not-found UI with `noindex`, but the HTTP status is 200: `app/cars/[slug]/loading.tsx` is a streaming boundary, so the status is committed before `notFound()` runs (same structure as before v10).

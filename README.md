@@ -146,6 +146,13 @@ npm run test:description   # 13-case unit test for description text formatter
 
 Expected output: `13 passed, 0 failed`. Must pass before every deploy.
 
+```bash
+npx tsc --noEmit           # 0 errors
+npm run lint               # 0 errors
+npm run build              # fails on type or lint errors
+npm run test:smoke         # Playwright smoke suite against the build (run `npx playwright install chromium` once)
+```
+
 ---
 
 ## Admin access
