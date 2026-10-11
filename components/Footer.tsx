@@ -31,7 +31,7 @@ export default function Footer({ config, socials }: { config: SiteConfig; social
               />
             </Link>
             <p className="st-body">
-              Independent creative technology studio for real-time simulation, digital environments and spatial experiences.
+              Independent development studio for real-time simulation, spatial design and cinematic production.
             </p>
           </div>
 

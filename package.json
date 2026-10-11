@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:description": "node lib/renderDescription.test.ts",
+    "test:contact": "node --test lib/contact.test.ts",
     "test:smoke": "playwright test"
   },
   "dependencies": {

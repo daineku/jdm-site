@@ -102,37 +102,7 @@ export function CompositionGlyph() {
   )
 }
 
-/** Design 02 — incident / reflected light on a surface. viewBox 240×180. */
-export function LightGlyph() {
-  return (
-    <svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <radialGradient id="lg-src" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor={GOLD} stopOpacity="0.55" />
-          <stop offset="1" stopColor={GOLD} stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="lg-floor" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor={IVORY} stopOpacity="0" />
-          <stop offset="0.5" stopColor={IVORY} stopOpacity="0.5" />
-          <stop offset="1" stopColor={IVORY} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <circle cx="58" cy="48" r="34" fill="url(#lg-src)" />
-      <circle cx="58" cy="48" r="4" fill={GOLD} />
-      {[14, 22, 30].map(r => <circle key={r} cx="58" cy="48" r={r} fill="none" stroke={GOLD} strokeOpacity={0.5 - r / 80} />)}
-      <line x1="10" y1="136" x2="230" y2="136" stroke="url(#lg-floor)" strokeWidth="1.2" />
-      <line x1="120" y1="136" x2="120" y2="70" stroke={IVORY} strokeOpacity="0.25" strokeDasharray="3 4" />
-      <path d="M 62 52 L 120 136" stroke={GOLD} strokeWidth="1.3" />
-      <path d="M 120 136 L 178 52" stroke={IVORY} strokeOpacity="0.75" strokeWidth="1.3" />
-      <path d="M 172 54 L 178 52 L 177 58" fill="none" stroke={IVORY} strokeOpacity="0.75" strokeWidth="1.3" />
-      <ellipse cx="120" cy="137" rx="30" ry="3" fill={IVORY} fillOpacity="0.18" />
-      <path d="M 109 120 A 18 18 0 0 1 120 118" fill="none" stroke={GOLD} strokeOpacity="0.7" />
-      <path d="M 120 118 A 18 18 0 0 1 131 120" fill="none" stroke={IVORY} strokeOpacity="0.5" />
-    </svg>
-  )
-}
-
-/** Design 03 — states connected by player input. viewBox 240×180. */
+/** Design 02 — states connected by player input. viewBox 240×180. */
 export function InteractionGlyph() {
   return (
     <svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -147,6 +117,30 @@ export function InteractionGlyph() {
       <circle cx="188" cy="118" r="3.5" fill={GOLD} />
       <circle cx="188" cy="118" r="20" fill="none" stroke={GOLD} strokeOpacity="0.25" />
       <path d="M 150 40 L 150 62 L 156 56 L 161 66 L 165 64 L 160 54 L 168 54 Z" fill={IVORY} fillOpacity="0.85" />
+    </svg>
+  )
+}
+
+/** Design 03 — a camera frustum framing the same massing; thirds grid and a tracked path. viewBox 240×180. */
+export function FramingGlyph() {
+  return (
+    <svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g stroke={IVORY} strokeOpacity="0.28" fill="none">
+        <path d="M 30 146 L 120 40 M 30 146 L 120 140 M 30 146 L 212 40 M 30 146 L 212 140" strokeDasharray="3 4" />
+      </g>
+      <rect x="120" y="40" width="92" height="100" fill={IVORY} fillOpacity="0.03" stroke={IVORY} strokeOpacity="0.6" />
+      <g stroke={IVORY} strokeOpacity="0.16">
+        <line x1="150.7" y1="40" x2="150.7" y2="140" /><line x1="181.3" y1="40" x2="181.3" y2="140" />
+        <line x1="120" y1="73.3" x2="212" y2="73.3" /><line x1="120" y1="106.7" x2="212" y2="106.7" />
+      </g>
+      <g fill={GOLD} fillOpacity="0.12" stroke={GOLD} strokeWidth="1.2">
+        <path d="M 142 128 L 142 66 L 156 60 L 156 122 Z" />
+        <path d="M 156 60 L 168 64 L 168 126 L 156 122 Z" fillOpacity="0.05" />
+      </g>
+      <path d="M 124 132 C 150 118, 176 124, 208 100" fill="none" stroke={GOLD} strokeOpacity="0.8" strokeWidth="1.2" />
+      <rect x="18" y="138" width="18" height="14" rx="2" fill="#050806" stroke={GOLD} />
+      <circle cx="27" cy="145" r="3" fill={GOLD} />
+      <path d="M 114 40 L 120 40 L 120 46 M 206 40 L 212 40 L 212 46 M 114 140 L 120 140 L 120 134 M 206 140 L 212 140 L 212 134" fill="none" stroke={GOLD} strokeWidth="1.4" />
     </svg>
   )
 }

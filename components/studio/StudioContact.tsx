@@ -1,23 +1,29 @@
 import type { SocialLink } from '@/lib/social'
 import { CONTACT } from './content'
-import ContactForm from './ContactForm'
+import ContactForm, { type ContactDelivery } from './ContactForm'
 import { SectionHeading } from './primitives'
 import { SocialList } from './SocialIcons'
 
 /**
  * Contact block. Only real channels are shown:
- *  - the address in NEXT_PUBLIC_CONTACT_EMAIL (form + direct link), and/or
+ *  - the enquiry form, when an email provider is configured (server delivery) or a public
+ *    address exists (mailto fallback);
+ *  - the public address (CONTACT_EMAIL) as a direct link;
  *  - social profiles configured in site_settings.
- * With neither configured, the section states that plainly instead of faking a contact.
+ * With none configured, the section states that plainly instead of faking a contact.
  */
-export default function StudioContact({ email, socials }: { email: string | null; socials: SocialLink[] }) {
-  const hasChannel = !!email || socials.length > 0
+export default function StudioContact({ email, delivery, socials }: {
+  email: string | null
+  delivery: ContactDelivery | null
+  socials: SocialLink[]
+}) {
+  const hasChannel = !!email || !!delivery || socials.length > 0
   return (
     <section id="contact" className="st-section st-contact" aria-labelledby="contact-title">
       <div className="st-container">
         <SectionHeading id="contact-title" label={CONTACT.label} title={CONTACT.title} lead={CONTACT.body} className="st-section-head" />
 
-        <div className={`st-contact__grid${email ? '' : ' st-contact__grid--solo'}`} data-reveal="">
+        <div className={`st-contact__grid${delivery ? '' : ' st-contact__grid--solo'}`} data-reveal="">
           <div className="st-card st-contact__info">
             {email && (
               <div className="st-contact__item">
@@ -34,14 +40,12 @@ export default function StudioContact({ email, socials }: { email: string | null
             {!hasChannel && (
               <p className="st-body">Contact details are being set up. Please check back shortly.</p>
             )}
-            <p className="st-body" style={{ fontSize: 14 }}>
-              New simulations, digital environments, interactive experiences and R&amp;D collaborations.
-            </p>
+            <p className="st-body" style={{ fontSize: 14 }}>{CONTACT.scope}</p>
           </div>
 
-          {email && (
+          {delivery && (
             <div className="st-card">
-              <ContactForm email={email} cta={CONTACT.cta} />
+              <ContactForm email={email} delivery={delivery} cta={CONTACT.cta} />
             </div>
           )}
         </div>

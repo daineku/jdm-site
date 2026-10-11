@@ -143,7 +143,7 @@ export default function Header({ socials }: { socials: SocialLink[] }) {
         </nav>
         <div className="st-menu__foot">
           <a href={href('contact')} className="st-btn st-btn--gold" onClick={() => close(false)}>
-            Start a project <span className="st-btn__arrow st-btn__arrow--diag" aria-hidden="true">↗</span>
+            Discuss a project <span className="st-btn__arrow st-btn__arrow--diag" aria-hidden="true">↗</span>
           </a>
           <SocialList links={socials} />
         </div>

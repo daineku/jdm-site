@@ -33,8 +33,8 @@ export default function StudioHero() {
           <h1 id="hero-title" className="st-h1 st-hero__h1">{HERO.headline}</h1>
           <p className="st-lead st-hero__body">{HERO.body}</p>
           <div className="st-hero__ctas">
-            <a href="#work" className="st-btn st-btn--gold">Explore our work <Arrow /></a>
-            <a href="#contact" className="st-btn st-btn--ghost">Start a project <Arrow diagonal /></a>
+            <a href="#work" className="st-btn st-btn--gold">{HERO.primaryCta} <Arrow /></a>
+            <a href="#contact" className="st-btn st-btn--ghost">{HERO.secondaryCta} <Arrow diagonal /></a>
           </div>
         </div>
       </div>

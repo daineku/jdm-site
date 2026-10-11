@@ -1,3 +1,4 @@
+import { isEmail } from './contact'
 import type { SiteSettings } from './types'
 
 export type SocialKey = 'instagram' | 'youtube' | 'tiktok'
@@ -28,10 +29,11 @@ export function getSocialLinks(settings: SiteSettings | null): SocialLink[] {
 }
 
 /**
- * Public contact address for the studio. Comes from NEXT_PUBLIC_CONTACT_EMAIL only —
- * no address is ever invented. Returns null when unset or not a plausible address.
+ * Public studio address, shown on the homepage and used as the mailto fallback.
+ * Read on the server at request time from CONTACT_EMAIL (NEXT_PUBLIC_CONTACT_EMAIL is
+ * still honoured for older configs). No address is ever invented: unset or implausible → null.
  */
 export function getContactEmail(): string | null {
-  const email = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim()
-  return email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+  const email = (process.env.CONTACT_EMAIL || process.env.NEXT_PUBLIC_CONTACT_EMAIL)?.trim()
+  return email && isEmail(email) ? email : null
 }

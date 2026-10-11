@@ -1,8 +1,9 @@
 import { DESIGN } from './content'
 import { delay } from './primitives'
-import { CompositionGlyph, InteractionGlyph, LightGlyph } from './visuals'
+import { CompositionGlyph, FramingGlyph, InteractionGlyph } from './visuals'
 
-const GLYPHS = [CompositionGlyph, LightGlyph, InteractionGlyph]
+// Build the world → massing, Make it respond → input states, Capture the experience → camera framing.
+const GLYPHS = [CompositionGlyph, InteractionGlyph, FramingGlyph]
 
 export default function DesignExperience() {
   return (

@@ -1,6 +1,6 @@
 import hero from '@/public/images/brand/hero.png'
-import { WORK } from './content'
-import { Crop, SectionHeading, delay } from './primitives'
+import { KANJO_URL, WORK } from './content'
+import { Arrow, Crop, SectionHeading, delay } from './primitives'
 import { MaterialStudyPanel, RoadNetworkPanel } from './visuals'
 
 // Wide 16:11 region: river skyline, the half-built wireframe block and the curving road —
@@ -33,6 +33,9 @@ export default function SelectedWork() {
                 <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>
               ))}
             </dl>
+            <a href={KANJO_URL} target="_blank" rel="noopener" className="st-btn st-btn--gold" style={{ justifySelf: 'start' }}>
+              {kanjo.cta} <Arrow diagonal /><span className="st-visually-hidden"> (opens thekanjo.com in a new tab)</span>
+            </a>
           </div>
         </article>
 

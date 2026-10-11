@@ -64,7 +64,10 @@ R2_BUCKET_NAME=jdm-photos
 R2_PUBLIC_URL=https://pub-xxx.r2.dev   # R2 public bucket URL (no trailing slash)
 ADMIN_SECRET_PATH=admin...             # URL path and request header secret (>=32 chars)
 NEXT_PUBLIC_SITE_URL=https://daineku.com  # Used by sitemap.ts (optional, defaults to daineku.com)
-NEXT_PUBLIC_CONTACT_EMAIL=               # Optional. Enables the studio contact form + email link. Inlined at build.
+CONTACT_EMAIL=                   # Public studio address (email link + mailto fallback). Server-side, read at request time.
+CONTACT_TO_EMAIL=                # Optional inbox for enquiries (defaults to CONTACT_EMAIL)
+RESEND_API_KEY=                  # Resend key — enables server-side enquiry delivery (secret)
+CONTACT_FROM_EMAIL=              # Sender on a Resend-verified domain, e.g. "DAINEKU <studio@daineku.com>"
 ```
 
 ### Feature flag overrides (optional)
@@ -142,6 +145,7 @@ git push -u origin main --force
 
 ```bash
 npm run test:description   # 13-case unit test for description text formatter
+npm run test:contact       # enquiry validation unit tests
 ```
 
 Expected output: `13 passed, 0 failed`. Must pass before every deploy.

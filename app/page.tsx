@@ -11,13 +11,14 @@ import StudioContact from '@/components/studio/StudioContact'
 import Reveal from '@/components/studio/Reveal'
 import { getSiteSettings } from '@/lib/data'
 import { getBaseUrl } from '@/lib/seo'
+import { isDeliveryConfigured } from '@/lib/contactDelivery'
 import { getContactEmail, getSocialLinks } from '@/lib/social'
 
 // Studio positioning is fixed here on purpose: the legacy JDM SEO defaults in
 // site_settings still apply to the archive pages, but never to the studio homepage.
 const TITLE = 'DAINEKU — Real-Time Simulation & Spatial Design Studio'
 const DESCRIPTION =
-  'DAINEKU is an independent creative technology studio specialising in real-time simulation, digital environments, spatial design and interactive experiences.'
+  'DAINEKU is an independent development studio creating real-time simulations, digital environments, interactive experiences and cinematic video production.'
 const OG_IMAGE = { url: '/images/brand/og.jpg', width: 1200, height: 630, alt: 'DAINEKU — a city at dusk, half wireframe, half finished' }
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default async function Home() {
   const settings = await getSiteSettings()
   const socials = getSocialLinks(settings)
   const email = getContactEmail()
+  const delivery = isDeliveryConfigured() ? 'server' : email ? 'mailto' : null
   const baseUrl = getBaseUrl()
 
   const jsonLd = {
@@ -53,6 +55,7 @@ export default async function Home() {
     url: `${baseUrl}/`,
     logo: `${baseUrl}/images/brand/logo.png`,
     description: DESCRIPTION,
+    knowsAbout: ['Real-time simulation', 'Spatial design', 'Digital environments', 'Cinematic and video production'],
     ...(email ? { email } : {}),
     ...(socials.length ? { sameAs: socials.map(s => s.href) } : {}),
   }
@@ -71,7 +74,7 @@ export default async function Home() {
       <BehindSimulation />
       <ProcessSection />
       <StudioAbout />
-      <StudioContact email={email} socials={socials} />
+      <StudioContact email={email} delivery={delivery} socials={socials} />
       <Reveal />
     </main>
   )

@@ -930,9 +930,31 @@ No font is fetched from Google — at build time or runtime.
 - **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build.
 - `@font-face` must stay *after* `@import "tailwindcss"` (CSS `@import` must precede all other rules).
 
-### Contact
+### Positioning & copy (v10.1)
 
-`NEXT_PUBLIC_CONTACT_EMAIL` enables the email link + enquiry form. The form validates, then opens the visitor's mail app (`mailto:`) — nothing is sent server-side and the UI says so. Unset → no form, socials only (or a plain "being set up" line). `NEXT_PUBLIC_*` is inlined at build: changing it needs a redeploy.
+All homepage copy lives in `components/studio/content.ts`; each section has one job (see the header comment there). Three commercial pillars — Real-Time Simulation, Spatial Design, Cinematic & Video Production — appear once, in **What We Make**. The Kanjo links to its verified site `https://www.thekanjo.com/` (`KANJO_URL`; the site states "Published by Daineku"). British English throughout.
+
+### Contact — project enquiries
+
+Form fields: name, email, project type (Simulation / Spatial Design / Cinematic & Video / Other), optional timeline, project description. Validation is shared (`lib/contact.ts`) by the form and the server.
+
+**Delivery modes** (decided on the server per request, `app/page.tsx`):
+
+| Configured | Behaviour |
+|---|---|
+| `RESEND_API_KEY` + `CONTACT_FROM_EMAIL` + an inbox | **server**: `POST /api/contact` → Resend → inbox. Success is shown only after Resend returns 2xx with an id; failures show an error plus the direct address. |
+| only `CONTACT_EMAIL` | **mailto** fallback: drafts the enquiry in the visitor's email app and says so. |
+| nothing | no form; socials or a "being set up" line. |
+
+Env (all server-side, read at request time — no rebuild needed, but Vercel applies env changes only to new deployments, so redeploy):
+
+- `CONTACT_EMAIL` — public studio address shown on the page and used as the mailto fallback (legacy `NEXT_PUBLIC_CONTACT_EMAIL` still honoured).
+- `CONTACT_TO_EMAIL` — optional; inbox for enquiries, defaults to `CONTACT_EMAIL`.
+- `RESEND_API_KEY` — secret.
+- `CONTACT_FROM_EMAIL` — sender on a domain **verified in Resend**, e.g. `DAINEKU <studio@daineku.com>`.
+- `RESEND_API_URL` — test only (the smoke suite points it at `tests/mock-resend.mjs`).
+
+Endpoint guards (`app/api/contact/route.ts`): JSON only, 16 KB cap, same-origin `Origin`, honeypot field `website` (silently accepted, never forwarded), minimum fill time 2.5 s measured by the form, 5 submissions / 10 min per client IP (**in-memory, per serverless instance** — a burst limiter, not a global quota), server-side validation with control-character rejection in single-line fields. The recipient is fixed by configuration; anything the browser sends as a recipient is ignored. Reply-To = the visitor's validated address; subject `Project enquiry — <type> — <name>`. Nothing is stored; logs carry only the HTTP status.
 
 ### Loader
 
@@ -949,13 +971,14 @@ No font is fetched from Google — at build time or runtime.
 | `npx tsc --noEmit` | 0 errors |
 | `npm run lint` | 0 errors (4 accepted warnings: 3 admin `<img>`, 1 deliberate `exhaustive-deps` in MasonryGallery — "fixing" it changes fetch behaviour) |
 | `npm run test:description` | 13 passed |
+| `npm run test:contact` | 8 passed — enquiry validation (`lib/contact.test.ts`, Node test runner) |
 | `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
 | `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390) |
 
 - `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
 - Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.
 - supabase-js has no generated DB types here, so it infers every embedded relation as an array. Many-to-one FK embeds are single objects at runtime — declare the row shape with `.overrideTypes<Row[], { merge: false }>()` (see `getModelBuildInstances`).
-- Smoke tests start `next start` with a random throwaway `ADMIN_SECRET_PATH` and mock `/api/photos`; they need no Supabase/R2 credentials. First run: `npx playwright install chromium`.
+- Smoke tests start `next start` with a random throwaway `ADMIN_SECRET_PATH` and mock `/api/photos`; they need no Supabase/R2 credentials. Contact delivery runs end to end against a local mock provider (`tests/mock-resend.mjs`) with a reserved `.invalid` inbox — it proves the app's delivery code, **not** real Resend delivery. First run: `npx playwright install chromium`.
 
 ### Known pre-existing issue (not changed)
 

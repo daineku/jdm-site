@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import hero from '@/public/images/brand/hero.png'
-import { BEHIND } from './content'
+import { BEHIND, KANJO_URL } from './content'
 import { Arrow, Crop, delay } from './primitives'
 
 // Tight square study of the half-built block: wireframe massing, lit floors, facade, barrier.
@@ -30,7 +30,9 @@ export default function BehindSimulation() {
             {BEHIND.body.map((p, i) => (
               <p key={p.slice(0, 24)} className={i === 0 ? 'st-lead' : 'st-body'} style={i === 0 ? { color: 'var(--st-text)' } : undefined}>{p}</p>
             ))}
-            <a href="#work" className="st-btn st-btn--green">Explore our work <Arrow /></a>
+            <a href={KANJO_URL} target="_blank" rel="noopener" className="st-btn st-btn--green">
+              {BEHIND.cta} <Arrow diagonal /><span className="st-visually-hidden"> (opens thekanjo.com in a new tab)</span>
+            </a>
           </div>
 
           <figure style={{ margin: 0 }} data-reveal="">

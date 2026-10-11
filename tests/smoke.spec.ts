@@ -58,6 +58,145 @@ test.describe('studio homepage', () => {
   })
 })
 
+test.describe('studio content', () => {
+  test('What We Make presents exactly the three service pillars', async ({ page }) => {
+    await page.goto('/')
+    const section = page.locator('section[aria-labelledby="worlds-title"]')
+    await expect(section.getByRole('heading', { level: 2 })).toHaveText('What We Make')
+    await expect(section.locator('h3')).toHaveText([
+      /Interactive Simulations/, /Digital Environments/, /Cinematic & Video Production/,
+    ])
+  })
+
+  test('section headings follow the approved structure', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('h2')).toContainText([
+      'What We Make', 'Designed as One Experience.', 'Selected Work', 'Production Capabilities',
+      'One World. Many Systems.', 'From Idea to Delivery.', 'Independent by Design.', "Let's Build Something.",
+    ])
+    await expect(page.locator('#expertise li')).toHaveCount(6)
+    await expect(page.locator('#process ol > li')).toHaveCount(4)
+  })
+
+  test('The Kanjo is presented as original IP in development, linking to its verified site', async ({ page }) => {
+    await page.goto('/')
+    const work = page.locator('#work')
+    await expect(work.getByRole('heading', { name: 'A City Built to Move.' })).toBeVisible()
+    await expect(work).toContainText('Original IP')
+    await expect(work).toContainText('In development')
+    const cta = work.getByRole('link', { name: /view the kanjo/i })
+    await expect(cta).toHaveAttribute('href', 'https://www.thekanjo.com/')
+    await expect(cta).toHaveAttribute('target', '_blank')
+    await expect(cta).toHaveAttribute('rel', /noopener/)
+  })
+
+  test('hero CTAs lead to the work and to the contact section', async ({ page }) => {
+    await page.goto('/')
+    const hero = page.locator('.st-hero')
+    await expect(hero.getByRole('link', { name: /explore our work/i })).toHaveAttribute('href', '#work')
+    await expect(hero.getByRole('link', { name: /discuss a project/i })).toHaveAttribute('href', '#contact')
+  })
+
+  test('public metadata: title, description, canonical, OpenGraph, Twitter, JSON-LD', async ({ page }) => {
+    await page.goto('/')
+    await expect(page).toHaveTitle('DAINEKU — Real-Time Simulation & Spatial Design Studio')
+    const meta = (sel: string) => page.locator(sel).first().getAttribute('content')
+    expect(await meta('meta[name="description"]')).toMatch(/independent development studio.*cinematic video production/i)
+    expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toMatch(/^https:\/\/[^/]+\/?$/) // the site root
+    expect(await meta('meta[property="og:title"]')).toBe('DAINEKU — Real-Time Simulation & Spatial Design Studio')
+    expect(await meta('meta[property="og:image"]')).toMatch(/\/images\/brand\/og\.jpg$/)
+    expect(await meta('meta[name="twitter:card"]')).toBe('summary_large_image')
+    expect(await page.locator('meta[name="robots"][content*="noindex"]').count()).toBe(0)
+    const ld = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent()) ?? '{}')
+    expect(ld['@type']).toBe('Organization')
+    expect(ld.name).toBe('DAINEKU')
+  })
+})
+
+test.describe('project enquiry', () => {
+  // Every test gets its own client address so the per-client rate limit never interferes.
+  let n = 0
+  const ip = () => `198.51.${Math.floor(Math.random() * 250)}.${(Date.now() + n++) % 250}`
+  const mock = (q: string) => fetch(`${process.env.MOCK_RESEND_URL}/__find?q=${encodeURIComponent(q)}`)
+
+  async function fillValid(page: Page, name: string) {
+    const form = page.locator('form.st-form')
+    await form.getByLabel('Name').fill(name)
+    await form.getByLabel('Email').fill('client@example.org')
+    await form.getByLabel('Project type').selectOption('Cinematic & Video')
+    await form.getByLabel('Timeline (optional)').fill('Spring 2027')
+    await form.getByLabel('Project description').fill('A launch film combining location footage with real-time city shots.')
+    await page.waitForTimeout(2_700) // a person takes longer than the server's minimum fill time
+  }
+
+  test('invalid submit shows inline errors, focuses the first field and sends nothing', async ({ page }) => {
+    const posts: string[] = []
+    page.on('request', r => { if (r.url().endsWith('/api/contact')) posts.push(r.url()) })
+    await page.goto('/#contact')
+    const form = page.locator('form.st-form')
+    await form.getByRole('button', { name: /discuss a project/i }).click()
+    await expect(form.locator('.st-field__error')).toHaveCount(4)
+    await expect(form.getByLabel('Name')).toBeFocused()
+    await expect(form.locator('[aria-invalid="true"]')).toHaveCount(4)
+    expect(posts).toEqual([])
+  })
+
+  test('a valid enquiry is delivered to the configured inbox, with category subject and Reply-To', async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'x-real-ip': ip() })
+    const name = `Smoke Client ${Date.now()}`
+    await page.goto('/#contact')
+    await fillValid(page, name)
+    await page.locator('form.st-form').getByRole('button', { name: /discuss a project/i }).click()
+    await expect(page.locator('[data-status="sent"]')).toBeVisible()
+    await expect(page.locator('form.st-form').getByLabel('Name')).toHaveValue('')
+
+    const hit = await mock(name)
+    expect(hit.status).toBe(200)
+    const { authorized, body } = await hit.json()
+    expect(authorized).toBe(true)
+    expect(body.to).toEqual([process.env.SMOKE_INBOX])
+    expect(body.reply_to).toBe('client@example.org')
+    expect(body.subject).toBe(`Project enquiry — Cinematic & Video — ${name}`)
+    expect(body.text).toContain('Spring 2027')
+  })
+
+  test('a provider failure is reported, never shown as success', async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'x-real-ip': ip() })
+    await page.goto('/#contact')
+    await fillValid(page, `PROVIDER-FAIL ${Date.now()}`)
+    await page.locator('form.st-form').getByRole('button', { name: /discuss a project/i }).click()
+    await expect(page.locator('[data-status="error"]')).toContainText(/could not be sent/i)
+    await expect(page.locator('[data-status="sent"]')).toHaveCount(0)
+  })
+
+  test('the endpoint ignores browser-supplied recipients and enforces its guards', async ({ request }) => {
+    const base = {
+      name: `Guard ${Date.now()}`, email: 'client@example.org', projectType: 'Other', timeline: '',
+      message: 'Checking that the recipient cannot be chosen by the browser.', website: '', elapsedMs: 5_000,
+    }
+    const post = (data: object, headers: Record<string, string> = {}) =>
+      request.post('/api/contact', { data, headers: { 'x-real-ip': ip(), ...headers } })
+
+    const injected = await post({ ...base, to: 'attacker@example.org', recipient: 'attacker@example.org' })
+    expect(injected.status()).toBe(200)
+    expect((await (await mock(base.name)).json()).body.to).toEqual([process.env.SMOKE_INBOX])
+
+    expect((await post({ ...base, name: `Fast ${Date.now()}`, elapsedMs: 300 })).status()).toBe(400)
+    expect((await post({ ...base, projectType: 'Anything' })).status()).toBe(422)
+    expect((await post(base, { origin: 'https://evil.example' })).status()).toBe(403)
+
+    const bot = `Honeypot ${Date.now()}`
+    expect((await post({ ...base, name: bot, website: 'https://spam.example' })).status()).toBe(200)
+    expect((await mock(bot)).status).toBe(404) // accepted silently, never forwarded
+
+    const same = ip()
+    const statuses: number[] = []
+    for (let i = 0; i < 6; i++) statuses.push((await post({ ...base, name: `Burst ${i} ${Date.now()}` }, { 'x-real-ip': same })).status())
+    expect(statuses.slice(0, 5)).toEqual([200, 200, 200, 200, 200])
+    expect(statuses[5]).toBe(429)
+  })
+})
+
 test.describe('mobile navigation', () => {
   test.skip(({ isMobile }) => !isMobile, 'mobile-only behaviour')
 
@@ -109,7 +248,7 @@ test.describe('legacy routes', () => {
     await expect(page.locator('a.pgrid-card')).toHaveCount(11)
     // Scroll the document directly (mouse-wheel input is unreliable under touch emulation)
     // until the third batch has rendered.
-    for (let i = 0; i < 20 && (await page.locator('a.pgrid-card').count()) < 20; i++) {
+    for (let i = 0; i < 40 && (await page.locator('a.pgrid-card').count()) < 20; i++) {
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
       await page.waitForTimeout(300)
     }
