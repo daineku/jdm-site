@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const ADMIN_FLAG = 'x-is-admin'
+
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
   const adminPath = process.env.ADMIN_SECRET_PATH
 
-  // Mark admin routes so the root layout can suppress the public header.
-  // This is server-side — no client flickering.
-  if (adminPath && request.nextUrl.pathname.startsWith(`/${adminPath}`)) {
-    response.headers.set('x-is-admin', '1')
+  // Mark admin routes so the root layout can suppress the public header/footer.
+  // The flag is forwarded on the *request* (the documented Next.js mechanism) —
+  // headers() in the layout reads request headers. It is never set on the
+  // response, and any client-supplied value is discarded so a visitor cannot
+  // spoof it on public pages.
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete(ADMIN_FLAG)
+
+  const { pathname } = request.nextUrl
+  if (adminPath && (pathname === `/${adminPath}` || pathname.startsWith(`/${adminPath}/`))) {
+    requestHeaders.set(ADMIN_FLAG, '1')
   }
 
-  return response
+  return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 export const config = {
