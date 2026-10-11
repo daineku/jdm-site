@@ -29,7 +29,7 @@
   --st-border-ink: rgba(13, 19, 15, 0.14);
 
   --st-font-display: var(--font-display), 'Space Grotesk', system-ui, sans-serif;
-  --st-font-body: var(--font-body), 'Manrope', system-ui, sans-serif;
+  --st-font-body: 'Manrope', system-ui, sans-serif;
 
   --st-hdr: 76px;
   --st-gutter: clamp(20px, 5vw, 72px);

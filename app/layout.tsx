@@ -11,20 +11,15 @@ import { buildSiteConfig } from '@/lib/siteConfig'
 import { getBaseUrl } from '@/lib/seo'
 import { getSocialLinks } from '@/lib/social'
 
-// Studio typefaces, self-hosted from app/fonts (SIL OFL, Latin variable subsets).
-// Committed files rather than next/font/google: no build-time or runtime fetch from Google.
+// Studio display face, self-hosted from app/fonts (SIL OFL). Committed file + next/font/local
+// rather than next/font/google (whose 15.3.6 loader crashes on current Google responses).
 const display = localFont({
   src: './fonts/SpaceGrotesk-Variable-latin.woff2',
   weight: '300 700',
   variable: '--font-display',
   display: 'swap',
 })
-const body = localFont({
-  src: './fonts/Manrope-Variable-latin.woff2',
-  weight: '200 800',
-  variable: '--font-body',
-  display: 'swap',
-})
+// Body face (Manrope) is declared once in globals.css under its real family name.
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()
@@ -87,12 +82,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const socials = getSocialLinks(settings)
 
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={display.variable}>
       <body>
         {!isAdmin && <Header socials={socials} />}
         {isAdmin ? children : <div id="main" tabIndex={-1} style={{ outline: 'none' }}>{children}</div>}
