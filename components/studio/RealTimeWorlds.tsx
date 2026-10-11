@@ -4,9 +4,10 @@ import { WORLDS } from './content'
 import { Crop, SectionHeading, delay } from './primitives'
 import { SimulationDiagram } from './visuals'
 
-// Regions of the key visual (1672×941 source px). Each frame is 4:5.
+// Regions of the key visual (1672×941 source px). Each frame is 4:5. Every use of the key
+// visual on the page shows a different subject — see also SelectedWork / BehindSimulation.
 const URBAN = { x: 990, y: 0, w: 432, h: 540 }
-const REALISM = { x: 700, y: 330, w: 440, h: 550 }
+const REALISM = { x: 1200, y: 400, w: 433, h: 541 }
 
 export default function RealTimeWorlds() {
   const media: ReactNode[] = [
@@ -21,9 +22,9 @@ export default function RealTimeWorlds() {
       <span className="st-frame-tag st-frame-tag--br">Path · velocity</span>
     </div>,
     <Crop key="realism" src={hero} region={REALISM} className="st-worlds__media st-ticks" frameVw={30} frameMaxPx={420}
-      alt="Detail of the key visual: warm interior light, trees and road lamps reflected in wet asphalt.">
+      alt="Detail of the key visual: a white sports car seen from behind, tail lights reflected in wet asphalt.">
       <span className="st-frame-tag st-frame-tag--tl">Fig. 03</span>
-      <span className="st-frame-tag st-frame-tag--br">Light · surface</span>
+      <span className="st-frame-tag st-frame-tag--br">Paint · reflection</span>
     </Crop>,
   ]
 

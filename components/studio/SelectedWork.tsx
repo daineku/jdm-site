@@ -3,8 +3,9 @@ import { WORK } from './content'
 import { Crop, SectionHeading, delay } from './primitives'
 import { MaterialStudyPanel, RoadNetworkPanel } from './visuals'
 
-// Wide 16:11 region: the half-built wireframe block, the city and the curving road.
-const KANJO = { x: 420, y: 80, w: 1252, h: 861 }
+// Wide 16:11 region: river skyline, the half-built wireframe block and the curving road —
+// deliberately without the car, which the hero already shows.
+const KANJO = { x: 0, y: 150, w: 1100, h: 756 }
 
 const PANELS = [RoadNetworkPanel, MaterialStudyPanel]
 
@@ -17,7 +18,7 @@ export default function SelectedWork() {
 
         <article className="st-case st-hover" aria-labelledby="kanjo-title">
           <Crop src={hero} region={KANJO} className="st-case__media st-ticks" frameVw={56} frameMaxPx={740}
-            alt="The Kanjo key visual: a city at dusk, a building shown half as wireframe, and a sports car on a wet elevated road.">
+            alt="The Kanjo: a river skyline at dusk, a building shown half as wireframe, and a wet elevated road curving through the city.">
             <span className="st-frame-tag st-frame-tag--tl">The Kanjo</span>
             <span className="st-frame-tag st-frame-tag--br">Work in progress</span>
           </Crop>

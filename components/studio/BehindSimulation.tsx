@@ -3,15 +3,15 @@ import hero from '@/public/images/brand/hero.png'
 import { BEHIND } from './content'
 import { Arrow, Crop, delay } from './primitives'
 
-// Square region around the half-built block: wireframe, lit floors, road lamps, wet asphalt.
-const REGION = { x: 470, y: 200, w: 660, h: 660 }
+// Tight square study of the half-built block: wireframe massing, lit floors, facade, barrier.
+const REGION = { x: 500, y: 170, w: 500, h: 500 }
 
 // Pins in % of the frame, measured on a 10% grid of REGION — locked to the picture because the crop is fixed (see Crop).
 const PINS = [
-  { x: 22, y: 18, side: 'r', k: 'Environment', v: 'Modular construction' },
-  { x: 63, y: 30, side: 'r', k: 'Light', v: 'Interior emissive' },
-  { x: 57, y: 70, side: 'l', k: 'Fixtures', v: 'Barrier lamps' },
-  { x: 78, y: 86, side: 'l', k: 'Surface', v: 'Wet asphalt response' },
+  { x: 24, y: 32, side: 'r', k: 'Environment', v: 'Modular construction' },
+  { x: 70, y: 18, side: 'l', k: 'Light', v: 'Interior emissive' },
+  { x: 76, y: 54, side: 'l', k: 'Material', v: 'Concrete · glass' },
+  { x: 30, y: 86, side: 'r', k: 'Geometry', v: 'Barrier mesh' },
 ] as const
 
 export default function BehindSimulation() {
@@ -35,7 +35,7 @@ export default function BehindSimulation() {
 
           <figure style={{ margin: 0 }} data-reveal="">
             <Crop src={hero} region={REGION} className="st-annot" frameVw={52} frameMaxPx={700}
-              alt="Detail of the key visual, annotated: a building half in wireframe, lit floors, barrier lamps and wet asphalt.">
+              alt="Detail of the key visual, annotated: a building half in wireframe, its lit floors, facade materials and the road barrier mesh.">
               {PINS.map(p => (
                 <span key={p.k} className="st-annot__pin" style={{ '--x': `${p.x}%`, '--y': `${p.y}%` } as CSSProperties}>
                   <span className="st-annot__dot" />
@@ -47,7 +47,7 @@ export default function BehindSimulation() {
               ))}
             </Crop>
             <figcaption className="st-visually-hidden">
-              Annotated layers: environment construction, interior light, road fixtures and wet surface response.
+              Annotated layers: environment construction, interior light, facade materials and barrier geometry.
             </figcaption>
           </figure>
         </div>
