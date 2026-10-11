@@ -23,6 +23,10 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -107,16 +111,6 @@ a.pgrid-card:hover * {
 .masonry-item {
   margin-bottom: 12px;
   break-inside: avoid;
-}
-
-/* Loader speedometer */
-@keyframes spin-needle {
-  0%   { transform: rotate(-130deg); }
-  100% { transform: rotate(100deg); }
-}
-.speedometer-needle {
-  transform-origin: 50% 80%;
-  animation: spin-needle 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
 }
 
 /* Fade in */

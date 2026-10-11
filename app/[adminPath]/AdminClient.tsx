@@ -40,7 +40,7 @@ export default function AdminClient({ adminSecret }: { adminSecret: string }) {
     { key: 'builds',      label: 'Builds',        icon: '\u25C8', group: 'Global' },
     { key: 'parts',       label: 'Parts',         icon: '\u25A6', group: 'Global' },
     { key: 'models',      label: 'Models',        icon: '\u2B21', group: 'Content' },
-    { key: 'homepage',    label: 'Homepage',      icon: '\u229E', group: 'Content' },
+    { key: 'homepage',    label: 'Archive Feed',  icon: '\u229E', group: 'Content' },
     { key: 'brands',      label: 'Brands',        icon: '\u25C7', group: 'Content' },
     { key: 'accessories', label: 'Accessories ⚠ Legacy', icon: '\u25CE', group: 'Legacy' },
   ]

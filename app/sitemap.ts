@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select('slug, created_at')
     .eq('is_published', true)
 
-  // Brand filter pages (?brand=slug) are query-param variations of the homepage,
+  // Brand filter pages (/archive?brand=slug) are query-param variations of the archive,
   // not canonical routes. They are excluded from the sitemap to avoid crawl budget
   // dilution. When /brand/[slug] pages are built, add them here.
 
@@ -32,6 +32,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
+  // The JDM feed that used to be the homepage now lives at /archive.
+  const archiveUrl       = { url: `${baseUrl}/archive`, lastModified: new Date().toISOString(), changeFrequency: 'daily' as const, priority: 0.7 }
   const buildsListingUrl = { url: `${baseUrl}/builds`, lastModified: new Date().toISOString(), changeFrequency: 'weekly' as const, priority: 0.7 }
   const partsListingUrl  = { url: `${baseUrl}/parts`,  lastModified: new Date().toISOString(), changeFrequency: 'weekly' as const, priority: 0.7 }
 
@@ -56,6 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 1.0,
     },
+    archiveUrl,
     ...modelUrls,
     buildsListingUrl,
     partsListingUrl,

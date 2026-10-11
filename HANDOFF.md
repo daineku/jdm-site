@@ -3,6 +3,11 @@
 **Code is the source of truth. When this document conflicts with actual files, the files win.**  
 Read this fully before touching any code. It encodes hard-earned lessons.
 
+> **v10 (studio redesign):** `/` is now the DAINEKU studio site (Real-Time Simulation & Spatial Design).
+> The JDM photo feed that used to be the homepage lives at **`/archive`** — same components, same API,
+> same admin curation. Everything below that says "homepage feed" now means the archive feed.
+> See **Section 23** for the studio architecture.
+
 ---
 
 ## Source of Truth — Key Files
@@ -13,7 +18,7 @@ When verifying behavior, these are the files that matter most:
 |---|---|
 | `app/cars/[slug]/CarPageClient.tsx` | Model page render order (10 sections), gallery, description, v5 blocks |
 | `lib/renderDescription.tsx` | Description text formatter (bold, italic, paragraphs) |
-| `components/PhotoGrid.tsx` | Homepage masonry cards, memoization, auto-cycle, image stability |
+| `components/PhotoGrid.tsx` | Archive (ex-homepage) masonry cards, memoization, auto-cycle, image stability |
 | `components/MasonryGallery.tsx` | Infinite scroll, batching, fetch lock, ordering |
 | `app/[adminPath]/components/ModelEditor.tsx` | Admin model CRUD, per-model tab router, upload pipeline |
 | `lib/data.ts` | All public DB queries (enforces `is_published`, degrades gracefully) |
@@ -59,13 +64,14 @@ When verifying behavior, these are the files that matter most:
 
 ```
 app/
-  page.tsx                    Homepage — wraps MasonryGallery in Suspense
+  page.tsx                    Studio homepage (components/studio/*)
+  archive/page.tsx            JDM feed (ex-homepage) — brand chips + MasonryGallery
   layout.tsx                  Root layout — fonts, Header
   globals.css                 Tailwind v4 init + all custom CSS
   sitemap.ts                  Sitemap — uses NEXT_PUBLIC_SITE_URL env var
   cars/[slug]/
     page.tsx                  Model page server component — fetches all 10 data sources
-    loading.tsx               Animated SpeedometerLoader during server fetch
+    loading.tsx               Static neutral skeleton during server fetch
     CarPageClient.tsx         Client renderer — 10-section canonical render order
   [adminPath]/
     page.tsx                  Auth check → AdminClient
@@ -115,8 +121,9 @@ app/
 components/
   PhotoGrid.tsx               Memoized masonry card renderer (homepage only)
   MasonryGallery.tsx          Infinite scroll wrapper
-  Header.tsx                  Nav, brands dropdown, socials
-  SpeedometerLoader.tsx       Loading animation (compact prop for scroll)
+  Header.tsx                  Studio header — fixed nav, mobile menu, scroll-spy (no DB nav_links)
+  Footer.tsx                  Studio footer — wordmark, nav, socials, archive link
+  studio/                     Studio homepage sections, design system (studio.css), copy (content.ts)
 
 lib/
   renderDescription.tsx       Description text formatter — safe, no dangerouslySetInnerHTML
@@ -510,7 +517,7 @@ Editable in admin → Site Settings → SEO Defaults section. No `canonical_base
 
 `app/robots.ts` — allows all crawlers, disallows `/api/` and `/_next/`, references sitemap URL built from `getBaseUrl()`.
 
-`app/sitemap.ts` — lists homepage + published model pages only. Brand query param URLs (`/?brand=slug`) intentionally excluded. When `/category/[slug]` or `/brand/[slug]` pages are built, add their entries here at the same time as the route file.
+`app/sitemap.ts` — lists homepage, `/archive`, published model pages and category listings. Brand query param URLs (`/archive?brand=slug`) intentionally excluded. When `/category/[slug]` or `/brand/[slug]` pages are built, add their entries here at the same time as the route file.
 
 ---
 
@@ -886,3 +893,46 @@ Completion gate:
 [ ] New public reads return null/[] on error, never throw
 [ ] New admin tabs follow BrandsTab.tsx pattern
 ```
+
+---
+
+## 23. v10 Studio Homepage (DAINEKU — Real-Time Simulation & Spatial Design)
+
+### Routes
+
+| Route | What |
+|---|---|
+| `/` | Studio site. Server components in `components/studio/`. No Supabase content except social links. |
+| `/archive` | The JDM feed (was `/`). `MasonryGallery` + `PhotoGrid`, unchanged batching/ordering. Brand chips → `/archive?brand=<slug>`. |
+| `/?brand=<slug>` | 307 → `/archive?brand=<slug>` (`next.config.ts` redirects, query preserved). Bare `/` is unaffected. |
+
+Admin → **Archive Feed** (was "Homepage") curates `/archive`. Data model unchanged (`show_on_home`, `home_sort_order`).
+
+### Studio files
+
+- `components/studio/content.ts` — all homepage copy. No invented clients, metrics or awards; The Kanjo is an own project *in development*.
+- `components/studio/studio.css` — design system, every rule scoped under `.studio` / `st-*`. The `.studio a` reset uses `:where()` (zero specificity) so it beats the legacy global `a { color: #39FF14 }` by source order without overriding component classes.
+- `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `SectionHeading`, `SectionDivider`, `delay()`.
+- `components/studio/visuals.tsx` — vector panels (simulation path, light, material studies, road graph). Decorative; replace with real captures later.
+- `components/studio/Reveal.tsx` — one IntersectionObserver for `[data-reveal]`. Content is visible in server HTML; the hidden state is armed only after mount and never under `prefers-reduced-motion`.
+
+### Brand assets — `public/images/brand/`
+
+`logo.png`, `title.png`, `hero.png`, `divider.png` are the originals (moved from `components/`). `logo-mark.png`, `title-wordmark.png`, `divider-line.png` are the same pixels with transparent padding trimmed. `og.jpg` is a 1200×630 crop of `hero.png`.
+The divider's green line is low-contrast on near-black — it is placed on the ivory bands (Expertise, Process) and once in the footer.
+
+### Fonts
+
+Space Grotesk (display) and Manrope (body) are self-hosted from `app/fonts/` via `next/font/local` (SIL OFL, licences alongside). **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build. The legacy Google `<link>` for Manrope stays because admin/legacy inline styles use the family name `Manrope`.
+
+### Contact
+
+`NEXT_PUBLIC_CONTACT_EMAIL` enables the email link + enquiry form. The form validates, then opens the visitor's mail app (`mailto:`) — nothing is sent server-side and the UI says so. Unset → no form, socials only (or a plain "being set up" line). `NEXT_PUBLIC_*` is inlined at build: changing it needs a redeploy.
+
+### Loader
+
+`SpeedometerLoader` is deleted. `MasonryGallery` renders as soon as the first batch arrives (the fake progress interval and 250 ms delay are gone); first load shows a static skeleton; the infinite-scroll sentinel is an empty 96 px div. `fetchedCountRef` / `isFetchingRef` untouched.
+
+### Lint note
+
+`npm run lint` fails before linting anything: `eslint.config.mjs` imports `eslint-config-next/core-web-vitals` (the v16 flat entry) but v15.3.6 is installed. Pre-existing; to lint today use `@eslint/eslintrc` `FlatCompat` with `next/core-web-vitals` + `next/typescript`.

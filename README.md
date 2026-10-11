@@ -1,6 +1,6 @@
 # DAINEKU
 
-A premium JDM (Japanese Domestic Market) automotive archive site with an admin panel.
+DAINEKU — independent studio for real-time simulation & spatial design. The studio site lives at `/`; the original JDM editorial archive (with its admin panel) lives at `/archive`. See HANDOFF.md §23.
 
 **Live:** daineku.com  
 **Admin:** `daineku.com/<ADMIN_SECRET_PATH>`  
@@ -64,6 +64,7 @@ R2_BUCKET_NAME=jdm-photos
 R2_PUBLIC_URL=https://pub-xxx.r2.dev   # R2 public bucket URL (no trailing slash)
 ADMIN_SECRET_PATH=admin...             # URL path and request header secret (>=32 chars)
 NEXT_PUBLIC_SITE_URL=https://daineku.com  # Used by sitemap.ts (optional, defaults to daineku.com)
+NEXT_PUBLIC_CONTACT_EMAIL=               # Optional. Enables the studio contact form + email link. Inlined at build.
 ```
 
 ### Feature flag overrides (optional)

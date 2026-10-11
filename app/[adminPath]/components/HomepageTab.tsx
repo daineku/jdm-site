@@ -110,7 +110,7 @@ export function HomepageTab({ adminSecret }: { adminSecret: string }) {
 
       <div style={{ ...s.row, marginBottom: 20, justifyContent: 'space-between' }}>
         <div>
-          <p style={{ ...s.secTitle, margin: 0 }}>Homepage Feed ({photos.length} photos)</p>
+          <p style={{ ...s.secTitle, margin: 0 }}>Archive Feed ({photos.length} photos) — shown at /archive</p>
           <p style={{ color: MUTED, fontSize: 11, marginTop: 4 }}>
             First 6 cards stay in fixed order. Rest are shown in random order each visit. Use ↑↓ to arrange, then Save Order.
           </p>

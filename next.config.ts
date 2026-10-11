@@ -13,6 +13,18 @@ const nextConfig: NextConfig = {
     // Prevent image optimization crashes on broken URLs
     dangerouslyAllowSVG: false,
   },
+  // The JDM feed moved from "/" to "/archive". Keep old brand-filter links working;
+  // a bare "/" is the studio homepage and is not affected. Query string is carried over.
+  async redirects() {
+    return [
+      {
+        source: '/',
+        has: [{ type: 'query', key: 'brand' }],
+        destination: '/archive',
+        permanent: false,
+      },
+    ]
+  },
   // Increase body size limit for API routes (upload route safety net)
   experimental: {
     serverActions: {
