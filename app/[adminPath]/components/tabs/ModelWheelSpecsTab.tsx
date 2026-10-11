@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, ErrorBanner, api, MUTED, G } from '../ui'
+import { s, ErrorBanner, api, MUTED, G } from '../ui'
 import type { CarWheelSpecs } from '@/lib/types'
 
 type Props = { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }
@@ -20,6 +20,14 @@ const EMPTY: FormState = {
 }
 
 const txt = (v: string | null) => v ?? ''
+
+type RowMeta = 'id' | 'car_id' | 'created_at' | 'updated_at'
+/** Copy of a DB row without its bookkeeping columns (same result as rest-destructuring them away). */
+function stripMeta<T extends Record<RowMeta, unknown>>(row: T): Omit<T, RowMeta> {
+  const copy: Partial<T> = { ...row }
+  delete copy.id; delete copy.car_id; delete copy.created_at; delete copy.updated_at
+  return copy as Omit<T, RowMeta>
+}
 const nul = (v: string) => v.trim() || null
 
 export function ModelWheelSpecsTab({ carId, adminSecret, onToast }: Props) {
@@ -31,12 +39,11 @@ export function ModelWheelSpecsTab({ carId, adminSecret, onToast }: Props) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const d = await api(`wheel-specs?car_id=${carId}`, 'GET', undefined, adminSecret)
+      const d = await api<{ wheelSpecs: CarWheelSpecs | null }>(`wheel-specs?car_id=${carId}`, 'GET', undefined, adminSecret)
       if (d.wheelSpecs) {
-        const { id, car_id, created_at, updated_at, ...rest } = d.wheelSpecs
-        setForm(rest)
+        setForm(stripMeta(d.wheelSpecs))
       }
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
@@ -49,7 +56,7 @@ export function ModelWheelSpecsTab({ carId, adminSecret, onToast }: Props) {
     try {
       await api('wheel-specs', 'PUT', { car_id: carId, ...form }, adminSecret)
       onToast('Wheel specs saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, api, useToast, Toggle, EmptyState, ErrorBanner, MUTED, G } from './ui'
+import { s, api, useToast, Toggle, EmptyState, ErrorBanner, MUTED, G, errorMessage } from './ui'
 import { BuildCategoriesTab } from './BuildCategoriesTab'
 
 type BuildEntry = {
@@ -26,9 +26,9 @@ export function BuildsSection({ adminSecret }: { adminSecret: string }) {
   const loadBuilds = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const d = await api('all-builds', 'GET', undefined, adminSecret)
+      const d = await api<{ allBuilds?: BuildEntry[] }>('all-builds', 'GET', undefined, adminSecret)
       setBuilds(d.allBuilds || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
     finally { setLoading(false) }
   }, [adminSecret])
 
@@ -40,7 +40,7 @@ export function BuildsSection({ adminSecret }: { adminSecret: string }) {
     try {
       await api('all-builds', 'PUT', { id: build.id, is_visible: !build.is_visible }, adminSecret)
       setBuilds(prev => prev.map(b => b.id === build.id ? { ...b, is_visible: !b.is_visible } : b))
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
   }
 
   const updateSortOrder = async (build: BuildEntry, val: number) => {
@@ -48,7 +48,7 @@ export function BuildsSection({ adminSecret }: { adminSecret: string }) {
       await api('all-builds', 'PUT', { id: build.id, sort_order: val }, adminSecret)
       setBuilds(prev => prev.map(b => b.id === build.id ? { ...b, sort_order: val } : b))
       show('Order updated')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
   }
 
   const featuredThumb = (b: BuildEntry) => {
@@ -92,7 +92,7 @@ export function BuildsSection({ adminSecret }: { adminSecret: string }) {
           <p style={s.secTitle}>All Builds</p>
           <div style={{ background: '#0f0f0f', border: '1px solid #1a1a1a', borderRadius: 3, padding: '10px 14px', marginBottom: 20 }}>
             <p style={{ fontSize: 11, color: MUTED, margin: 0 }}>
-              Builds are created inside each model's <strong style={{ color: '#aaa' }}>Builds tab</strong>. This view is for managing visibility and display order across all builds.
+              Builds are created inside each model&apos;s <strong style={{ color: '#aaa' }}>Builds tab</strong>. This view is for managing visibility and display order across all builds.
             </p>
           </div>
           <ErrorBanner message={error} />

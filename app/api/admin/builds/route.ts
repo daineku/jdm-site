@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
 
+type BuildPartInput = { name: string; notes?: string | null }
+
 export async function GET(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const carId = req.nextUrl.searchParams.get('car_id')
@@ -18,7 +20,7 @@ export async function POST(req: NextRequest) {
   const { data: build, error } = await supabaseAdmin.from('builds').insert(buildData).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (build_parts && build_parts.length > 0) {
-    const parts = build_parts.map((p: any, i: number) => ({ build_id: build.id, name: p.name, notes: p.notes || null, sort_order: i }))
+    const parts = build_parts.map((p: BuildPartInput, i: number) => ({ build_id: build.id, name: p.name, notes: p.notes || null, sort_order: i }))
     await supabaseAdmin.from('build_parts').insert(parts)
   }
   return NextResponse.json({ build })
@@ -33,7 +35,7 @@ export async function PUT(req: NextRequest) {
   if (build_parts !== undefined) {
     await supabaseAdmin.from('build_parts').delete().eq('build_id', id)
     if (build_parts.length > 0) {
-      const parts = build_parts.map((p: any, i: number) => ({ build_id: id, name: p.name, notes: p.notes || null, sort_order: i }))
+      const parts = build_parts.map((p: BuildPartInput, i: number) => ({ build_id: id, name: p.name, notes: p.notes || null, sort_order: i }))
       await supabaseAdmin.from('build_parts').insert(parts)
     }
   }

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED } from './ui'
+import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, errorMessage } from './ui'
 import type { GlobalBuild } from '@/lib/types'
 
 type Form = Omit<GlobalBuild, 'id' | 'created_at'>
@@ -21,14 +21,14 @@ export function GlobalBuildsTab({ adminSecret }: { adminSecret: string }) {
 
   const load = useCallback(async () => {
     try {
-      const d = await api('global-builds', 'GET', undefined, adminSecret)
+      const d = await api<{ globalBuilds?: GlobalBuild[] }>('global-builds', 'GET', undefined, adminSecret)
       setBuilds(d.globalBuilds || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY); setEditing(null) }
 
   const save = async () => {
@@ -39,14 +39,14 @@ export function GlobalBuildsTab({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('global-builds', 'PUT', { id: editing, ...form }, adminSecret)
       else await api('global-builds', 'POST', form, adminSecret)
       cancel(); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, title: string) => {
     if (!confirm(`Delete build "${title}"? All model assignments will be removed.`)) return
     try { await api('global-builds', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (b: GlobalBuild) => {

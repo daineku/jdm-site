@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, G } from './ui'
+import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, errorMessage } from './ui'
 
 type Brand = { id: string; name: string; slug: string; logo_url: string | null; sort_order: number; is_visible: boolean }
 
@@ -17,14 +17,14 @@ export function BrandsTab({ adminSecret }: { adminSecret: string }) {
 
   const load = useCallback(async () => {
     try {
-      const d = await api('brands', 'GET', undefined, adminSecret)
+      const d = await api<{ brands?: Brand[] }>('brands', 'GET', undefined, adminSecret)
       setBrands(d.brands || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof EMPTY>(k: K, v: typeof EMPTY[K]) => setForm(f => ({ ...f, [k]: v }))
 
   const cancel = () => { setForm(EMPTY); setEditing(null) }
 
@@ -36,14 +36,14 @@ export function BrandsTab({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('brands', 'PUT', { id: editing, ...form }, adminSecret)
       else await api('brands', 'POST', { ...form, logo_url: form.logo_url || null }, adminSecret)
       cancel(); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, name: string) => {
     if (!confirm(`Delete brand "${name}"? Models using this brand will be unlinked.`)) return
     try { await api('brands', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (b: Brand) => {

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { s, Field, EmptyState, api } from '../ui'
 
-type Block = { id: string; block_type: string; title: string | null; sort_order: number; is_visible: boolean; config: Record<string, any> }
+type Block = { id: string; block_type: string; title: string | null; sort_order: number; is_visible: boolean; config: Record<string, unknown> }
 type Props = { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }
 
 const BLOCK_TYPES = ['gallery', 'builds', 'accessories', 'videos', 'racing_games', 'rich_text', 'media']
@@ -14,9 +14,9 @@ export function ModelBlocksTab({ carId, adminSecret, onToast }: Props) {
   const [newTitle, setNewTitle] = useState('')
 
   useEffect(() => {
-    api(`blocks?car_id=${carId}`, 'GET', undefined, adminSecret)
-      .then((d: any) => setBlocks(d.blocks || []))
-      .catch((e: any) => onToast(e.message, 'error'))
+    api<{ blocks: Block[] | null }>(`blocks?car_id=${carId}`, 'GET', undefined, adminSecret)
+      .then(d => setBlocks(d.blocks || []))
+      .catch((e: unknown) => onToast(e instanceof Error ? e.message : String(e), 'error'))
   }, [carId, adminSecret]) // eslint-disable-line
 
   const sorted = [...blocks].sort((a, b) => a.sort_order - b.sort_order)
@@ -24,16 +24,16 @@ export function ModelBlocksTab({ carId, adminSecret, onToast }: Props) {
   const addBlock = async () => {
     const sort = sorted.length > 0 ? Math.max(...sorted.map(b => b.sort_order)) + 10 : 10
     try {
-      const d = await api('blocks', 'POST', { car_id: carId, block_type: newType, title: newTitle || null, sort_order: sort, is_visible: true, config: {} }, adminSecret)
+      const d = await api<{ block: Block }>('blocks', 'POST', { car_id: carId, block_type: newType, title: newTitle || null, sort_order: sort, is_visible: true, config: {} }, adminSecret)
       setBlocks(prev => [...prev, d.block]); setAdding(false); setNewTitle(''); onToast('Block added')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const toggle = async (block: Block) => {
     try {
       await api('blocks', 'PUT', { id: block.id, is_visible: !block.is_visible }, adminSecret)
       setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, is_visible: !b.is_visible } : b))
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const move = async (block: Block, dir: 'up' | 'down') => {
@@ -46,13 +46,13 @@ export function ModelBlocksTab({ carId, adminSecret, onToast }: Props) {
         api('blocks', 'PUT', { id: swap.id, sort_order: block.sort_order }, adminSecret),
       ])
       setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, sort_order: swap.sort_order } : b.id === swap.id ? { ...b, sort_order: block.sort_order } : b))
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete block?')) return
     try { await api('blocks', 'DELETE', { id }, adminSecret); setBlocks(prev => prev.filter(b => b.id !== id)); onToast('Deleted') }
-    catch (e: any) { onToast(e.message, 'error') }
+    catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   return (

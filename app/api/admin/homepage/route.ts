@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
 
+type HomepageUpdateBody = { id?: string; [key: string]: unknown }
+type OrderEntry = { id?: string; home_sort_order?: unknown }
+type HomepageOrderBody = { orders?: OrderEntry[] }
+
 export async function GET(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { data, error } = await supabaseAdmin
@@ -15,14 +19,14 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  let body: any
+  let body: HomepageUpdateBody
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { id, ...updates } = body
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
 
   const allowed = ['caption', 'home_sort_order', 'show_on_home', 'alt_text']
-  const safe: Record<string, any> = {}
+  const safe: Record<string, unknown> = {}
   for (const k of allowed) {
     if (k in updates) safe[k] = updates[k]
   }
@@ -55,7 +59,7 @@ export async function PUT(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  let body: any
+  let body: HomepageOrderBody
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { orders } = body

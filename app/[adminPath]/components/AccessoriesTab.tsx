@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { s, Field, Toggle, EmptyState, api, useToast, MUTED } from './ui'
+import { s, Field, Toggle, EmptyState, api, useToast, MUTED, errorMessage } from './ui'
 
 type Car = { id: string; title: string }
 type Accessory = {
@@ -29,16 +29,17 @@ export function AccessoriesTab({ adminSecret }: { adminSecret: string }) {
   const load = useCallback(async () => {
     try {
       const [a, c] = await Promise.all([
-        api('accessories', 'GET', undefined, adminSecret).then((d: any) => d.accessories || []),
-        api('cars', 'GET', undefined, adminSecret).then((d: any) => d.cars || []),
+        api<{ accessories?: Accessory[] }>('accessories', 'GET', undefined, adminSecret).then(d => d.accessories || []),
+        api<{ cars?: Car[] }>('cars', 'GET', undefined, adminSecret).then(d => d.cars || []),
       ])
       setAccessories(a); setCars(c)
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
   }, [adminSecret, show])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  type Form = typeof EMPTY
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }))
 
   // Toggle whether this accessory is HIDDEN for a specific model
   const toggleHide = (carId: string) => {
@@ -64,14 +65,14 @@ export function AccessoriesTab({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('accessories', 'PUT', { id: editing, ...payload }, adminSecret)
       else await api('accessories', 'POST', payload, adminSecret)
       setForm(EMPTY); setEditing(null); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"?`)) return
     try { await api('accessories', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (a: Accessory) => {
@@ -93,7 +94,7 @@ export function AccessoriesTab({ adminSecret }: { adminSecret: string }) {
       <div style={{ background: '#0d1a0d', border: '1px solid #1a3a1a', borderRadius: 3, padding: '10px 14px', marginBottom: 20 }}>
         <p style={{ fontSize: 11, color: '#3a6a3a', margin: 0 }}>
           Accessories show on <strong style={{ color: '#39FF14' }}>all models by default</strong>.
-          Use "Hide for models" to exclude specific models.
+          Use &quot;Hide for models&quot; to exclude specific models.
         </p>
       </div>
 

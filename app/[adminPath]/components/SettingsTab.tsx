@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, ErrorBanner, api, useToast, MUTED } from './ui'
+import { s, Field, api, useToast, MUTED, errorMessage } from './ui'
 import { ImageUploadField } from './ImageUploadField'
 
 type Settings = {
@@ -27,10 +27,10 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
   const load = useCallback(async () => {
     setLoadError('')
     try {
-      const d = await api('settings', 'GET', undefined, adminSecret)
+      const d = await api<{ settings?: Settings | null }>('settings', 'GET', undefined, adminSecret)
       if (!d.settings) { setLoadError('No settings found. Run migration_v2_final.sql in Supabase.'); return }
       setForm(d.settings)
-    } catch (e: any) { setLoadError(e.message) }
+    } catch (e) { setLoadError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
@@ -43,7 +43,7 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
   )
   if (!form) return <div style={{ color: '#555', fontSize: 12, padding: 20 }}>Loading...</div>
 
-  const set = (k: keyof Settings, v: any) => setForm((f: any) => ({ ...f, [k]: v }))
+  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setForm(f => ({ ...f, [k]: v }) as Settings)
   const updateNav = (i: number, k: string, v: string) => {
     const l = [...form.nav_links]; l[i] = { ...l[i], [k]: v }; set('nav_links', l)
   }
@@ -67,7 +67,7 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
         search_console_verification: form.search_console_verification || null,
       }, adminSecret)
       show('Settings saved')
-    } catch (e: any) { show('Save failed: ' + e.message, 'error') }
+    } catch (e) { show('Save failed: ' + errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
@@ -109,7 +109,7 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
               <input style={{ ...s.input, width: 120 }} value={link.label} onChange={e => updateNav(i, 'label', e.target.value)} placeholder="Label" />
               <input style={s.input} value={link.href} onChange={e => updateNav(i, 'href', e.target.value)} placeholder="/page" />
               <button style={{ ...s.btn('danger'), padding: '6px 10px', flexShrink: 0 }}
-                onClick={() => set('nav_links', form.nav_links.filter((_: any, j: number) => j !== i))}>x</button>
+                onClick={() => set('nav_links', form.nav_links.filter((_, j) => j !== i))}>x</button>
             </div>
           ))}
         </div>
@@ -118,7 +118,7 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
       {/* ── SEO DEFAULTS ─────────────────────────────────────── */}
       <p style={{ ...s.secTitle, marginTop: 28 }}>SEO Defaults</p>
       <p style={{ fontSize: 11, color: MUTED, marginBottom: 12 }}>
-        Fallback values for pages without specific SEO overrides. Per-model SEO is in each model's Info tab.
+        Fallback values for pages without specific SEO overrides. Per-model SEO is in each model&apos;s Info tab.
         The canonical base URL is set via <code style={{ color: '#39FF14', fontSize: 10 }}>NEXT_PUBLIC_SITE_URL</code> env var.
       </p>
       <div style={s.card}>

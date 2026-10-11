@@ -17,12 +17,12 @@ export function ModelBuildsAssignTab({ carId, adminSecret, onToast }: Props) {
     setError('')
     try {
       const [buildsRes, assignRes] = await Promise.all([
-        api('global-builds', 'GET', undefined, adminSecret),
-        api(`car-builds?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ globalBuilds: GlobalBuild[] }>('global-builds', 'GET', undefined, adminSecret),
+        api<{ buildIds: string[] }>(`car-builds?car_id=${carId}`, 'GET', undefined, adminSecret),
       ])
       setAllBuilds(buildsRes.globalBuilds || [])
       setAssigned(new Set(assignRes.buildIds || []))
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
@@ -40,7 +40,7 @@ export function ModelBuildsAssignTab({ carId, adminSecret, onToast }: Props) {
         await api('car-builds', 'POST', { car_id: carId, build_id: buildId }, adminSecret)
         setAssigned(prev => new Set([...prev, buildId]))
       }
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setToggling(null) }
   }
 

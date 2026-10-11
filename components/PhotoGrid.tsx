@@ -19,6 +19,7 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { resolvePhotoAlt } from '@/lib/seo'
+import type Masonry from 'masonry-layout'
 
 export type PhotoGridItem = {
   id: string
@@ -27,7 +28,8 @@ export type PhotoGridItem = {
   orientation: 'vertical' | 'horizontal'
   caption: string | null
   alt_text: string | null
-  [key: string]: any
+  // Joined model (GalleryPhoto.car) — read for caption/alt fallbacks and by getHref callers.
+  car?: { title?: string | null; slug?: string | null } | null
 }
 
 export interface PhotoGridProps {
@@ -37,8 +39,6 @@ export interface PhotoGridProps {
   fit?: 'cover' | 'contain'
 }
 
-const VERTICAL_RATIO   = '2 / 3'
-const HORIZONTAL_RATIO = '4 / 3'
 const AUTO_INTERVAL_MS = 3500
 const AUTO_RESUME_MS   = 8000
 
@@ -72,10 +72,10 @@ const PhotoCard = memo(function PhotoCard({
   const isVertical = photo.orientation === 'vertical'
   const src        = photo.thumb_url || photo.url
   // caption: used both for the visible card caption text and as a fallback in alt text
-  const caption    = photo.caption || (photo as any).car?.title || null
+  const caption    = photo.caption || photo.car?.title || null
   // Canonical alt text fallback: explicit alt → caption → car title → safe generic.
   // Never empty string for contextual photos — empty means decorative to screen readers.
-  const carTitle   = (photo as any).car?.title || null
+  const carTitle   = photo.car?.title || null
   const altText    = resolvePhotoAlt(photo.alt_text, caption, carTitle)
 
   const cardStyle: React.CSSProperties = {
@@ -182,9 +182,12 @@ const PhotoCard = memo(function PhotoCard({
   )
 })
 
+// The subset of the masonry-layout instance this grid calls.
+type MasonryInstance = Required<Pick<Masonry, 'layout' | 'appended' | 'destroy'>>
+
 export default function PhotoGrid({ photos, gap = 8, getHref, fit = 'cover' }: PhotoGridProps) {
   const containerRef  = useRef<HTMLDivElement>(null)
-  const masonryRef    = useRef<any>(null)
+  const masonryRef    = useRef<MasonryInstance | null>(null)
   const resizeTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -263,7 +266,8 @@ export default function PhotoGrid({ photos, gap = 8, getHref, fit = 'cover' }: P
         // briefly covering the first card in the grid.
         transitionDuration: 0,
       })
-      masonryRef.current = msnry
+      // The library always defines these; its typings just mark every method optional.
+      masonryRef.current = msnry as MasonryInstance
       // Cards have CSS aspect-ratio (.pgrid-inner--v/h) so masonry knows heights
       // without waiting for images to load. Calling layout() directly avoids
       // imagesLoaded(container) which probes ALL lazy imgs via proxyImage,

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:description": "node lib/renderDescription.test.ts"
+    "test:description": "node lib/renderDescription.test.ts",
+    "test:smoke": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
@@ -27,6 +28,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@playwright/test": "1.56",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

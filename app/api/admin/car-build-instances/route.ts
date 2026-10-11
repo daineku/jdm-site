@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
   }
 
   // photo_ids is passed alongside the build data but stored in build_instance_photos
-  const { photo_ids, ...buildData } = result.data as any
+  const parsed: typeof result.data & { photo_ids?: string[] } = result.data
+  const { photo_ids, ...buildData } = parsed
 
   const { data, error } = await supabaseAdmin
     .from('car_build_instances')
@@ -70,7 +71,8 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: result.error.issues[0]?.message ?? 'Invalid payload' }, { status: 400 })
   }
 
-  const { id, photo_ids, ...updates } = result.data as any
+  const parsed: typeof result.data & { photo_ids?: string[] } = result.data
+  const { id, photo_ids, ...updates } = parsed
 
   const { data, error } = await supabaseAdmin
     .from('car_build_instances')

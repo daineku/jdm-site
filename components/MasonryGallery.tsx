@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PhotoGrid from './PhotoGrid'
 import type { GalleryPhoto } from '@/lib/types'
 

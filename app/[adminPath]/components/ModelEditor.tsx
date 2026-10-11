@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, G } from './ui'
+import { s, Field, ErrorBanner, EmptyState, api, useToast, MUTED, G, errorMessage } from './ui'
 import { ModelGalleryTab } from './tabs/ModelGalleryTab'
 import { ModelStoryTab } from './tabs/ModelStoryTab'
 import { ModelStyleTab } from './tabs/ModelStyleTab'
@@ -12,7 +12,6 @@ import { ModelPartsAssignTab } from './tabs/ModelPartsAssignTab'
 import { ModelExtrasTab } from './tabs/ModelExtrasTab'
 import { ModelBlocksTab } from './tabs/ModelBlocksTab'
 import { ModelBuildsTab } from './tabs/ModelBuildsTab'
-import { isAdminEnabled } from '@/lib/features'
 
 type Brand = { id: string; name: string; slug: string }
 type Car = { id: string; title: string; slug: string; description: string | null; subtitle: string | null; brand: string | null; brand_id: string | null; cover_image: string | null; is_published: boolean; sort_order: number; seo_title: string | null; seo_description: string | null; brand_data?: Brand | null }
@@ -32,11 +31,11 @@ export function ModelEditor({ adminSecret }: { adminSecret: string }) {
   const load = useCallback(async () => {
     try {
       const [c, b] = await Promise.all([
-        api('cars', 'GET', undefined, adminSecret).then((d: any) => d.cars || []),
-        api('brands', 'GET', undefined, adminSecret).then((d: any) => d.brands || []),
+        api<{ cars?: Car[] }>('cars', 'GET', undefined, adminSecret).then(d => d.cars || []),
+        api<{ brands?: Brand[] }>('brands', 'GET', undefined, adminSecret).then(d => d.brands || []),
       ])
       setCars(c); setBrands(b)
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
@@ -100,7 +99,7 @@ export function ModelEditor({ adminSecret }: { adminSecret: string }) {
                 await api('cars', 'DELETE', { id: car.id }, adminSecret)
                 load()
                 show('Deleted')
-              } catch (ex: any) { show(ex.message, 'error') }
+              } catch (ex) { show(errorMessage(ex), 'error') }
             }}
           >Del</button>
           <span style={{ fontSize: 10, color: '#333' }}>›</span>
@@ -127,7 +126,8 @@ function ModelForm({ brands, adminSecret, onSave, onCancel, onToast, initial }: 
   } : EMPTY_CAR)
   const [saving, setSaving] = useState(false)
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  type CarForm = typeof EMPTY_CAR
+  const set = <K extends keyof CarForm>(k: K, v: CarForm[K]) => setForm(f => ({ ...f, [k]: v }))
 
   const save = async () => {
     if (!form.title.trim()) { onToast('Title is required', 'error'); return }
@@ -135,13 +135,13 @@ function ModelForm({ brands, adminSecret, onSave, onCancel, onToast, initial }: 
     setSaving(true)
     try {
       const payload = { ...form, is_published: form.is_published === true, brand_id: form.brand_id || null, brand: form.brand || null, description: form.description || null, subtitle: form.subtitle || null, cover_image: form.cover_image || null, seo_title: form.seo_title || null, seo_description: form.seo_description || null }
-      let d
-      if (initial) d = await api('cars', 'PUT', { id: initial.id, ...payload }, adminSecret)
-      else d = await api('cars', 'POST', payload, adminSecret)
+      let d: { car?: Car } | undefined
+      if (initial) d = await api<{ car?: Car }>('cars', 'PUT', { id: initial.id, ...payload }, adminSecret)
+      else d = await api<{ car?: Car }>('cars', 'POST', payload, adminSecret)
       if (!d?.car) throw new Error('Server did not return model data')
       onSave(d.car)
       onToast('Saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 

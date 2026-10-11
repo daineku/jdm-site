@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     .eq('car_id', carId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ gameIds: (data || []).map((r: any) => r.game_id) })
+  return NextResponse.json({ gameIds: (data || []).map((r: { game_id: string }) => r.game_id) })
 }
 
 export async function POST(req: NextRequest) {

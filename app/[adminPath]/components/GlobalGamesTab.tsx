@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED } from './ui'
+import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, errorMessage } from './ui'
 import type { GlobalGame } from '@/lib/types'
 
 type Form = Omit<GlobalGame, 'id' | 'created_at'>
@@ -21,14 +21,14 @@ export function GlobalGamesTab({ adminSecret }: { adminSecret: string }) {
 
   const load = useCallback(async () => {
     try {
-      const d = await api('global-games', 'GET', undefined, adminSecret)
+      const d = await api<{ globalGames?: GlobalGame[] }>('global-games', 'GET', undefined, adminSecret)
       setGames(d.globalGames || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY); setEditing(null) }
 
   const save = async () => {
@@ -39,14 +39,14 @@ export function GlobalGamesTab({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('global-games', 'PUT', { id: editing, ...form }, adminSecret)
       else await api('global-games', 'POST', form, adminSecret)
       cancel(); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, title: string) => {
     if (!confirm(`Delete game "${title}"? All model assignments will be removed.`)) return
     try { await api('global-games', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (g: GlobalGame) => {

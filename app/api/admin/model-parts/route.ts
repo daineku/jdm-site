@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     .select('part_id')
     .eq('car_id', carId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ partIds: (data || []).map((r: any) => r.part_id) })
+  return NextResponse.json({ partIds: (data || []).map((r: { part_id: string }) => r.part_id) })
 }
 
 export async function POST(req: NextRequest) {

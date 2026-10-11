@@ -35,7 +35,7 @@ export default async function PartsPage() {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-          {categories.map((cat: any) => (
+          {categories.map(cat => (
             <Link key={cat.id} href={`/parts/${cat.slug}`}
               style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#111', border: '1px solid #1e1e1e', borderRadius: 4, padding: '16px 18px', textDecoration: 'none' }}>
 

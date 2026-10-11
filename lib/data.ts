@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Model, GalleryPhoto, Brand, SiteSettings } from './types'
+import type { Model, GalleryPhoto, Brand, SiteSettings, PublicBuildInstance, Accessory } from './types'
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   const { data } = await supabase.from('site_settings').select('*').single()
@@ -76,8 +76,9 @@ export async function getModelBuilds(carId: string) {
 export async function getModelAccessories(carId: string) {
   const { data: all } = await supabase
     .from('accessories').select('*').eq('is_active', true).order('sort_order')
+    .overrideTypes<(Accessory & { hidden_for_car_ids: string[] | null })[], { merge: false }>()
   if (!all || all.length === 0) return []
-  return all.filter((acc: any) => {
+  return all.filter(acc => {
     const hiddenFor: string[] = acc.hidden_for_car_ids || []
     return !hiddenFor.includes(carId)
   })
@@ -119,11 +120,13 @@ export async function getModelCategories(carId: string) {
     .from('car_build_categories')
     .select('category:build_categories(id, name, slug, description, icon_ref, sort_order)')
     .eq('car_id', carId)
+    // Many-to-one FK embed: a single object (or null) at runtime, not an array.
+    .overrideTypes<{ category: { id: string; name: string; slug: string; description: string | null; icon_ref: string | null; sort_order: number } | null }[], { merge: false }>()
   if (error) {
     console.error('[data.getModelCategories]', { carId, error: error.message, code: error.code })
     return []
   }
-  return (data?.map((r: any) => r.category).filter(Boolean) ?? []) as {
+  return (data?.map(r => r.category).filter(Boolean) ?? []) as {
     id: string; name: string; slug: string; description: string | null; icon_ref: string | null; sort_order: number
   }[]
 }
@@ -159,11 +162,12 @@ export async function getModelGlobalBuilds(carId: string) {
     .select('build:global_builds(id, title, slug, description, logo_url, is_published)')
     .eq('car_id', carId)
     .order('sort_order')
+    .overrideTypes<{ build: { id: string; title: string; slug: string; description: string | null; logo_url: string | null; is_published: boolean } | null }[], { merge: false }>()
   if (error) {
     console.error('[data.getModelGlobalBuilds]', { carId, error: error.message, code: error.code })
     return []
   }
-  return (data?.map((r: any) => r.build).filter((b: any) => b?.is_published) ?? []) as {
+  return (data?.map(r => r.build).filter(b => b?.is_published) ?? []) as {
     id: string; title: string; slug: string; description: string | null; logo_url: string | null
   }[]
 }
@@ -174,11 +178,12 @@ export async function getModelGlobalGames(carId: string) {
     .select('game:global_games(id, title, slug, description, logo_url, is_published)')
     .eq('car_id', carId)
     .order('sort_order')
+    .overrideTypes<{ game: { id: string; title: string; slug: string; description: string | null; logo_url: string | null; is_published: boolean } | null }[], { merge: false }>()
   if (error) {
     console.error('[data.getModelGlobalGames]', { carId, error: error.message, code: error.code })
     return []
   }
-  return (data?.map((r: any) => r.game).filter((g: any) => g?.is_published) ?? []) as {
+  return (data?.map(r => r.game).filter(g => g?.is_published) ?? []) as {
     id: string; title: string; slug: string; description: string | null; logo_url: string | null
   }[]
 }
@@ -211,8 +216,9 @@ export async function getModelsForBuild(buildId: string) {
     .from('car_builds')
     .select('car:cars(id, title, slug, cover_image, brand, brand_id, is_published, brand_data:brands(name))')
     .eq('build_id', buildId)
+    .overrideTypes<{ car: { id: string; title: string; slug: string; cover_image: string | null; brand: string | null; brand_id: string | null; is_published: boolean; brand_data?: { name: string } | null } | null }[], { merge: false }>()
   if (error) return []
-  const cars = (data?.map((r: any) => r.car).filter((c: any) => c?.is_published) ?? []) as {
+  const cars = (data?.map(r => r.car).filter(c => c?.is_published) ?? []) as {
     id: string; title: string; slug: string; cover_image: string | null; brand: string | null; brand_data?: { name: string } | null
   }[]
   // Enrich each car with its first gallery photo for cover fallback
@@ -230,8 +236,9 @@ export async function getModelsForGame(gameId: string) {
     .from('car_games')
     .select('car:cars(id, title, slug, cover_image, brand, brand_id, is_published, brand_data:brands(name))')
     .eq('game_id', gameId)
+    .overrideTypes<{ car: { id: string; title: string; slug: string; cover_image: string | null; brand: string | null; brand_id: string | null; is_published: boolean; brand_data?: { name: string } | null } | null }[], { merge: false }>()
   if (error) return []
-  const cars = (data?.map((r: any) => r.car).filter((c: any) => c?.is_published) ?? []) as {
+  const cars = (data?.map(r => r.car).filter(c => c?.is_published) ?? []) as {
     id: string; title: string; slug: string; cover_image: string | null; brand: string | null; brand_data?: { name: string } | null
   }[]
   return Promise.all(cars.map(async car => {
@@ -292,10 +299,11 @@ export async function getPhotosForBuildCategory(categoryId: string) {
       build:car_build_instances!inner(category_id, car:cars!inner(is_published))
     `)
     .eq('build.category_id', categoryId)
+    .overrideTypes<{ photo: { id: string; url: string; thumb_url: string | null; orientation: string; car_id: string; alt_text: string | null; caption: string | null } | null }[], { merge: false }>()
   if (error) { console.error('[data.getPhotosForBuildCategory]', error.message); return [] }
   return (data || [])
-    .map((r: any) => r.photo)
-    .filter((p: any) => p && p.car_id) as {
+    .map(r => r.photo)
+    .filter(p => p && p.car_id) as {
       id: string; url: string; thumb_url: string | null; orientation: string; car_id: string; alt_text: string | null; caption: string | null
     }[]
 }
@@ -332,7 +340,7 @@ export async function getPartsForCategory(categoryId: string) {
   return data || []
 }
 
-export async function getModelBuildInstances(carId: string) {
+export async function getModelBuildInstances(carId: string): Promise<PublicBuildInstance[]> {
   const { data, error } = await supabase
     .from('car_build_instances')
     .select(`
@@ -343,6 +351,9 @@ export async function getModelBuildInstances(carId: string) {
     .eq('car_id', carId)
     .eq('is_visible', true)
     .order('sort_order')
+    // Without generated DB types, supabase-js infers every embed as an array;
+    // these are many-to-one FK embeds, returned as single objects at runtime.
+    .overrideTypes<PublicBuildInstance[], { merge: false }>()
   if (error) { console.error('[data.getModelBuildInstances]', error.message); return [] }
   return data || []
 }

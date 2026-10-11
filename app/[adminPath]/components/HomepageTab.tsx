@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { s, Field, ErrorBanner, EmptyState, api, useToast, MUTED, G, CARD, BORDER } from './ui'
+import { s, ErrorBanner, EmptyState, api, useToast, MUTED, G, errorMessage } from './ui'
 
 type HomePhoto = {
   id: string
@@ -26,9 +26,9 @@ export function HomepageTab({ adminSecret }: { adminSecret: string }) {
     setLoading(true)
     setError('')
     try {
-      const d = await api('homepage', 'GET', undefined, adminSecret)
+      const d = await api<{ photos?: HomePhoto[] }>('homepage', 'GET', undefined, adminSecret)
       setPhotos(d.photos || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
     finally { setLoading(false) }
   }, [adminSecret])
 
@@ -38,9 +38,9 @@ export function HomepageTab({ adminSecret }: { adminSecret: string }) {
   const saveField = async (photo: HomePhoto, field: 'caption' | 'alt_text', value: string) => {
     setSaving(photo.id)
     try {
-      const d = await api('homepage', 'PUT', { id: photo.id, [field]: value || null }, adminSecret)
+      const d = await api<{ photo?: Partial<HomePhoto> }>('homepage', 'PUT', { id: photo.id, [field]: value || null }, adminSecret)
       setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, ...d.photo } : p))
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(null) }
   }
 
@@ -52,7 +52,7 @@ export function HomepageTab({ adminSecret }: { adminSecret: string }) {
       await api('homepage', 'PUT', { id: photo.id, show_on_home: false }, adminSecret)
       setPhotos(prev => prev.filter(p => p.id !== photo.id))
       show('Removed from homepage')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(null) }
   }
 
@@ -82,10 +82,10 @@ export function HomepageTab({ adminSecret }: { adminSecret: string }) {
           { id: b.id, home_sort_order: aOrder },
         ]
       }, adminSecret)
-    } catch (e: any) {
+    } catch (e) {
       // Revert on failure
       setPhotos(photos)
-      show('Reorder failed: ' + e.message, 'error')
+      show('Reorder failed: ' + errorMessage(e), 'error')
     }
   }
 
@@ -98,7 +98,7 @@ export function HomepageTab({ adminSecret }: { adminSecret: string }) {
       await api('homepage', 'POST', { orders }, adminSecret)
       setPhotos(prev => prev.map((p, i) => ({ ...p, home_sort_order: (i + 1) * 10 })))
       show('Order saved — first 6 cards will stay fixed on homepage')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
   }
 
   if (loading) return <div style={{ color: MUTED, fontSize: 12, padding: 20 }}>Loading…</div>

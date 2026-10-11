@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getPublishedBuildCategories, getSiteSettings } from '@/lib/data'
-import { resolveSeoTitle, resolveSeoDescription, getBaseUrl } from '@/lib/seo'
+import { resolveSeoTitle, getBaseUrl } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +35,7 @@ export default async function BuildsPage() {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-          {categories.map((cat: any) => (
+          {categories.map(cat => (
             <Link key={cat.id} href={`/builds/${cat.slug}`}
               style={{ display: 'block', background: '#111', border: '1px solid #1e1e1e', borderRadius: 4, overflow: 'hidden', textDecoration: 'none' }}>
 

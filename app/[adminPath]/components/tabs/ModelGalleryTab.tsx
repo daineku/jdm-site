@@ -11,6 +11,12 @@ type Photo = {
 
 type Props = { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }
 
+/** `.message` of a thrown value. heic2any rejects with a plain `{ code, message }` object, not an Error. */
+function errorMessage(e: unknown): string {
+  if (typeof e === 'object' && e !== null && 'message' in e) return String(e.message)
+  return String(e)
+}
+
 export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,12 +33,12 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
     const p = reset ? 0 : page
     if (reset) { setPage(0); setPhotos([]) }
     try {
-      const d = await api(`photos?car_id=${carId}&offset=${p * PAGE_SIZE}&limit=${PAGE_SIZE}`, 'GET', undefined, adminSecret)
+      const d = await api<{ photos: Photo[] }>(`photos?car_id=${carId}&offset=${p * PAGE_SIZE}&limit=${PAGE_SIZE}`, 'GET', undefined, adminSecret)
       const incoming: Photo[] = d.photos || []
       if (reset) { setPhotos(incoming) } else { setPhotos(prev => [...prev, ...incoming]) }
       setHasMore(incoming.length === PAGE_SIZE)
       if (!reset) setPage(p + 1)
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setLoading(false) }
   }, [carId, adminSecret, page, onToast])
 
@@ -79,11 +85,11 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
     let source: Blob = file
     if (ext === 'heic' || ext === 'heif') {
       try {
-        const heic2any = (await import('heic2any')).default as any
+        const heic2any = (await import('heic2any')).default
         const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
         source = Array.isArray(result) ? result[0] : result
-      } catch (e: any) {
-        throw new Error(`HEIC conversion failed: ${e.message}. Try converting the file to JPEG first.`)
+      } catch (e) {
+        throw new Error(`HEIC conversion failed: ${errorMessage(e)}. Try converting the file to JPEG first.`)
       }
     }
     return blobToJpeg(source, 2400, 0.88)
@@ -110,14 +116,14 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
         fd.append('car_id', carId)
         fd.append('orientation', orientation)
         const res = await fetch('/api/admin/upload', { method: 'POST', headers: { 'x-admin-secret': adminSecret }, body: fd })
-        let json: any = {}
+        let json: { error?: string } = {}
         try { json = await res.json() } catch { json = { error: `Server error ${res.status}` } }
         if (!res.ok) throw new Error(json.error || `Upload failed (${res.status})`)
         setUploadQueue(q => q.map((item, j) => j === i ? { ...item, status: 'done' as const } : item))
         successCount++
-      } catch (e: any) {
+      } catch (e) {
         setUploadQueue(q => q.map((item, j) => j === i ? { ...item, status: 'error' as const } : item))
-        onToast(`${file.name}: ${e.message}`, 'error')
+        onToast(`${file.name}: ${errorMessage(e)}`, 'error')
       }
     }
     setUploading(false)
@@ -136,7 +142,7 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
       if ('show_on_home' in updates) {
         onToast(updates.show_on_home ? 'Added to homepage — visit Homepage tab to set order & caption' : 'Removed from homepage')
       }
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const delPhoto = async (photo: Photo) => {
@@ -145,7 +151,7 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
       await api('photos', 'DELETE', { id: photo.id, url: photo.url, thumb_url: photo.thumb_url, original_url: photo.original_url }, adminSecret)
       setPhotos(prev => prev.filter(p => p.id !== photo.id))
       onToast('Deleted')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   if (loading) return <div style={{ color: MUTED, fontSize: 12, padding: 20 }}>Loading…</div>
@@ -164,7 +170,7 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
         style={{ border: `2px dashed ${dragOver ? G : '#1e1e1e'}`, borderRadius: 3, padding: '20px', textAlign: 'center', marginBottom: 16, cursor: 'pointer', transition: 'border-color 0.15s' }}
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={e => { e.preventDefault(); setDragOver(false); e.dataTransfer.files && uploadFiles(e.dataTransfer.files) }}
+        onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files) uploadFiles(e.dataTransfer.files) }}
         onClick={() => fileRef.current?.click()}
       >
         <p style={{ color: dragOver ? G : '#333', fontSize: 12, margin: 0 }}>
@@ -196,7 +202,7 @@ export function ModelGalleryTab({ carId, adminSecret, onToast }: Props) {
                   onClick={async () => {
                     // Fetch a short-lived signed URL for the clean original (admin-only)
                     try {
-                      const d = await api(`original-url?photo_id=${photo.id}`, 'GET', undefined, adminSecret)
+                      const d = await api<{ signedUrl: string | null; isLegacy: boolean }>(`original-url?photo_id=${photo.id}`, 'GET', undefined, adminSecret)
                       const target = d.signedUrl || photo.url
                       window.open(target, '_blank', 'noopener,noreferrer')
                     } catch {

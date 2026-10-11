@@ -9,7 +9,6 @@ import { BuildCategoriesTab } from './components/BuildCategoriesTab'
 import { PartCategoriesTab } from './components/PartCategoriesTab'
 import { BuildsSection } from './components/BuildsSection'
 import { PartsSection } from './components/PartsSection'
-import { isAdminEnabled } from '@/lib/features'
 
 const SPIN_STYLE = `@keyframes spin { to { transform: rotate(360deg); } }`
 

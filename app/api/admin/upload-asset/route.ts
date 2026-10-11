@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
     try {
       const url = await uploadToR2(rawBuffer, key, 'image/jpeg')
       return NextResponse.json({ url })
-    } catch (e: any) {
-      return NextResponse.json({ error: `Upload failed: ${e.message}` }, { status: 500 })
+    } catch (e) {
+      return NextResponse.json({ error: `Upload failed: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 })
     }
   }
 }

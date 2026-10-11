@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED } from './ui'
+import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, errorMessage } from './ui'
 import { ImageUploadField } from './ImageUploadField'
 import type { BuildCategory } from '@/lib/types'
 
@@ -26,14 +26,14 @@ export function BuildCategoriesTab({ adminSecret }: { adminSecret: string }) {
 
   const load = useCallback(async () => {
     try {
-      const d = await api('build-categories', 'GET', undefined, adminSecret)
+      const d = await api<{ buildCategories?: BuildCategory[] }>('build-categories', 'GET', undefined, adminSecret)
       setCategories(d.buildCategories || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY); setEditing(null) }
 
   const save = async () => {
@@ -44,14 +44,14 @@ export function BuildCategoriesTab({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('build-categories', 'PUT', { id: editing, ...form }, adminSecret)
       else await api('build-categories', 'POST', form, adminSecret)
       cancel(); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"? Models using this category will be unlinked.`)) return
     try { await api('build-categories', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (c: BuildCategory) => {

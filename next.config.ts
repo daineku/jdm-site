@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+  // Type and lint errors fail the build (both pass as of v10 — keep it that way).
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },

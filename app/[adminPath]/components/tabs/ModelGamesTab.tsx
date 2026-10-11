@@ -13,32 +13,32 @@ export function ModelGamesTab({ carId, adminSecret, onToast }: Props) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    api(`games?car_id=${carId}`, 'GET', undefined, adminSecret)
-      .then((d: any) => setGames(d.games || []))
-      .catch((e: any) => onToast(e.message, 'error'))
+    api<{ games: Game[] | null }>(`games?car_id=${carId}`, 'GET', undefined, adminSecret)
+      .then(d => setGames(d.games || []))
+      .catch((e: unknown) => onToast(e instanceof Error ? e.message : String(e), 'error'))
   }, [carId, adminSecret]) // eslint-disable-line
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) => setForm(f => ({ ...f, [k]: v }))
 
   const save = async () => {
     if (!form.game_title.trim()) { onToast('Game title is required', 'error'); return }
     setSaving(true)
     try {
       const payload = { ...form, car_id: carId, game_logo_url: form.game_logo_url || null, description: form.description || null, external_url: form.external_url || null }
-      let d
-      if (editing) d = await api('games', 'PUT', { id: editing, ...payload }, adminSecret)
-      else d = await api('games', 'POST', payload, adminSecret)
+      let d: { game: Game }
+      if (editing) d = await api<{ game: Game }>('games', 'PUT', { id: editing, ...payload }, adminSecret)
+      else d = await api<{ game: Game }>('games', 'POST', payload, adminSecret)
       if (editing) setGames(prev => prev.map(g => g.id === editing ? d.game : g))
       else setGames(prev => [...prev, d.game])
       setForm(empty); setEditing(null); onToast('Saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete?')) return
     try { await api('games', 'DELETE', { id }, adminSecret); setGames(prev => prev.filter(g => g.id !== id)); onToast('Deleted') }
-    catch (e: any) { onToast(e.message, 'error') }
+    catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const edit = (g: Game) => {

@@ -66,7 +66,7 @@ export type ModelBlock = {
   title: string | null
   sort_order: number
   is_visible: boolean
-  config: Record<string, any>
+  config: Record<string, unknown>
   created_at: string
 }
 
@@ -332,4 +332,25 @@ export type GlobalPart = {
   created_at: string
   // joined
   category?: Pick<PartCategory, 'id' | 'name' | 'slug'> | null
+}
+
+/**
+ * Public build instance as returned by getModelBuildInstances.
+ * `category` and `photo` are many-to-one embeds (via category_id / photo_id FKs),
+ * which PostgREST returns as a single object or null — not an array.
+ */
+export type PublicBuildInstance = {
+  id: string
+  title: string
+  setup_summary: string
+  category_id: string | null
+  is_visible: boolean
+  sort_order: number
+  category: { id: string; name: string; slug: string } | null
+  photos: {
+    build_id: string
+    photo_id: string
+    sort_order: number
+    photo: { id: string; url: string; thumb_url: string | null; orientation: 'vertical' | 'horizontal' } | null
+  }[]
 }

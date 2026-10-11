@@ -33,9 +33,9 @@ export async function GET(req: NextRequest) {
   try {
     const signedUrl = await getOriginalSignedUrl(photo.original_url, 900) // 15 min
     return NextResponse.json({ signedUrl, isLegacy: false })
-  } catch (e: any) {
+  } catch (e) {
     // If signing fails, fall back to public url rather than erroring out
-    console.error('[original-url] Signing failed:', e.message)
+    console.error('[original-url] Signing failed:', e instanceof Error ? e.message : String(e))
     return NextResponse.json({ signedUrl: photo.url, isLegacy: true })
   }
 }
