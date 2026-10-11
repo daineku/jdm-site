@@ -1,53 +1,34 @@
 import type { SocialLink } from '@/lib/social'
 import { CONTACT } from './content'
-import ContactForm, { type ContactDelivery } from './ContactForm'
+import ContactForm from './ContactForm'
 import { SectionHeading } from './primitives'
 import { SocialList } from './SocialIcons'
 
 /**
- * Contact block. Only real channels are shown:
- *  - the enquiry form, when an email provider is configured (server delivery) or a public
- *    address exists (mailto fallback);
- *  - the public address (CONTACT_EMAIL) as a direct link;
- *  - social profiles configured in site_settings.
- * With none configured, the section states that plainly instead of faking a contact.
+ * The enquiry recipient is configured only on the server (CONTACT_TO_EMAIL).
+ * Never display or pass that address to client components or public markup.
+ * Show the form only when the outbound mail provider is ready.
  */
-export default function StudioContact({ email, delivery, socials }: {
-  email: string | null
-  delivery: ContactDelivery | null
+export default function StudioContact({ deliveryReady, socials }: {
+  deliveryReady: boolean
   socials: SocialLink[]
 }) {
-  const hasChannel = !!email || !!delivery || socials.length > 0
   return (
     <section id="contact" className="st-section st-contact" aria-labelledby="contact-title">
       <div className="st-container">
         <SectionHeading id="contact-title" label={CONTACT.label} title={CONTACT.title} lead={CONTACT.body} className="st-section-head" />
-
-        <div className={`st-contact__grid${delivery ? '' : ' st-contact__grid--solo'}`} data-reveal="">
+        <div className={`st-contact__grid${deliveryReady ? '' : ' st-contact__grid--solo'}`} data-reveal="">
           <div className="st-card st-contact__info">
-            {email && (
-              <div className="st-contact__item">
-                <p className="st-label st-label--muted" style={{ margin: 0 }}>Email</p>
-                <a className="st-contact__email" href={`mailto:${email}`}>{email}</a>
-              </div>
-            )}
+            <p className="st-body">{CONTACT.scope}</p>
             {socials.length > 0 && (
               <div className="st-contact__item">
-                <p className="st-label st-label--muted" style={{ margin: 0 }}>{email ? 'Elsewhere' : 'Reach the studio'}</p>
+                <p className="st-label st-label--muted" style={{ margin: 0 }}>Follow DAINEKU</p>
                 <SocialList links={socials} />
               </div>
             )}
-            {!hasChannel && (
-              <p className="st-body">Contact details are being set up. Please check back shortly.</p>
-            )}
-            <p className="st-body" style={{ fontSize: 14 }}>{CONTACT.scope}</p>
+            {!deliveryReady && <p className="st-body">The project enquiry form is being prepared.</p>}
           </div>
-
-          {delivery && (
-            <div className="st-card">
-              <ContactForm email={email} delivery={delivery} cta={CONTACT.cta} />
-            </div>
-          )}
+          {deliveryReady && <div className="st-card"><ContactForm email={null} delivery="server" cta={CONTACT.cta} /></div>}
         </div>
       </div>
     </section>
