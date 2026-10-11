@@ -125,9 +125,9 @@ export const PROJECT_TYPES = [
 ] as const
 
 export const CONTACT = {
-  label: 'Work with Daineku',
-  title: "Let's Build Something.",
-  body: 'Tell us what you want to create, who it is for and what you need delivered.',
-  cta: 'Discuss a project',
-  scope: 'A brief can cover software, environments, visuals or a combination.',
+  label: 'Start a Project',
+  title: 'Bring Your Next Project to Life.',
+  body: 'From an early concept to a production-ready experience, tell us what you have in mind. We can help define the right technical and creative approach.',
+  cta: 'Send Project Enquiry',
+  scope: 'Simulation, interactive development, digital environments, visual production — and projects combining several disciplines.',
 }
