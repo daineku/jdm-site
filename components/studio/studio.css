@@ -693,56 +693,32 @@
 .st-facts dd { margin: 0; font-size: 0.92rem; color: var(--st-text); }
 
 /* Developed systems — the case study's technical proof, under the artwork. */
-.st-systems { margin-top: clamp(72px, 8vw, 120px); }
-.st-systems__head {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(24px, 5vw, 80px);
-  align-items: baseline;
-  padding-bottom: clamp(28px, 3vw, 40px);
-}
-.st-systems__head .st-body { margin: 0; color: #b7c2bb; max-width: 62ch; }
+.st-systems { margin-top: clamp(40px, 5vw, 70px); }
+.st-systems__head { padding-bottom: 18px; }
+.st-systems__head .st-h3 { margin: 0; color: var(--st-text); }
 .st-systems__list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: clamp(24px, 3vw, 48px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(24px, 4vw, 64px);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 .st-systems__list > li {
   display: grid;
-  gap: 14px;
   align-content: start;
-  padding: clamp(24px, 2.6vw, 34px) 0 clamp(36px, 4vw, 52px);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  gap: 12px;
+  padding: 22px 0 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
 .st-systems__title { display: flex; align-items: baseline; gap: 14px; }
-.st-systems__list .st-body { margin: 0; color: #b7c2bb; }
-.st-systems__list .st-deliverables { border-top-color: rgba(255, 255, 255, 0.14); }
-.st-systems__list .st-deliverables li { border-bottom-color: rgba(255, 255, 255, 0.14); font-size: 0.86rem; }
-.st-status {
-  justify-self: start;
-  margin: 0;
-  padding: 5px 10px;
-  border: 1px solid currentColor;
-  font-family: var(--st-font-display);
-  font-size: 0.6rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--st-green-text);
-}
-.st-status--progress { color: var(--st-gold); }
+.st-systems__title .st-h3 { margin: 0; }
+.st-systems__list .st-body { margin: 0; color: #b7c2bb; max-width: 54ch; }
 
-@media (max-width: 1099px) {
-  .st-systems__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 899px) {
   .st-case { grid-template-columns: 1fr; }
-  .st-systems__head { grid-template-columns: 1fr; gap: 16px; }
 }
 @media (max-width: 599px) {
-  .st-facts div { grid-template-columns: 92px 1fr; }
   .st-systems__list { grid-template-columns: 1fr; }
 }
 
