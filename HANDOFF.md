@@ -3,6 +3,11 @@
 **Code is the source of truth. When this document conflicts with actual files, the files win.**  
 Read this fully before touching any code. It encodes hard-earned lessons.
 
+> **v10 (studio redesign):** `/` is now the DAINEKU studio site (Real-Time Simulation & Spatial Design).
+> The JDM photo feed that used to be the homepage lives at **`/archive`** — same components, same API,
+> same admin curation. Everything below that says "homepage feed" now means the archive feed.
+> See **Section 23** for the studio architecture.
+
 ---
 
 ## Source of Truth — Key Files
@@ -13,7 +18,7 @@ When verifying behavior, these are the files that matter most:
 |---|---|
 | `app/cars/[slug]/CarPageClient.tsx` | Model page render order (10 sections), gallery, description, v5 blocks |
 | `lib/renderDescription.tsx` | Description text formatter (bold, italic, paragraphs) |
-| `components/PhotoGrid.tsx` | Homepage masonry cards, memoization, auto-cycle, image stability |
+| `components/PhotoGrid.tsx` | Archive (ex-homepage) masonry cards, memoization, auto-cycle, image stability |
 | `components/MasonryGallery.tsx` | Infinite scroll, batching, fetch lock, ordering |
 | `app/[adminPath]/components/ModelEditor.tsx` | Admin model CRUD, per-model tab router, upload pipeline |
 | `lib/data.ts` | All public DB queries (enforces `is_published`, degrades gracefully) |
@@ -59,13 +64,14 @@ When verifying behavior, these are the files that matter most:
 
 ```
 app/
-  page.tsx                    Homepage — wraps MasonryGallery in Suspense
+  page.tsx                    Studio homepage (components/studio/*)
+  archive/page.tsx            JDM feed (ex-homepage) — brand chips + MasonryGallery
   layout.tsx                  Root layout — fonts, Header
   globals.css                 Tailwind v4 init + all custom CSS
   sitemap.ts                  Sitemap — uses NEXT_PUBLIC_SITE_URL env var
   cars/[slug]/
     page.tsx                  Model page server component — fetches all 10 data sources
-    loading.tsx               Animated SpeedometerLoader during server fetch
+    loading.tsx               Static neutral skeleton during server fetch
     CarPageClient.tsx         Client renderer — 10-section canonical render order
   [adminPath]/
     page.tsx                  Auth check → AdminClient
@@ -115,8 +121,9 @@ app/
 components/
   PhotoGrid.tsx               Memoized masonry card renderer (homepage only)
   MasonryGallery.tsx          Infinite scroll wrapper
-  Header.tsx                  Nav, brands dropdown, socials
-  SpeedometerLoader.tsx       Loading animation (compact prop for scroll)
+  Header.tsx                  Studio header — fixed nav, mobile menu, scroll-spy (no DB nav_links)
+  Footer.tsx                  Studio footer — wordmark, nav, socials, archive link
+  studio/                     Studio homepage sections, design system (studio.css), copy (content.ts)
 
 lib/
   renderDescription.tsx       Description text formatter — safe, no dangerouslySetInnerHTML
@@ -510,7 +517,7 @@ Editable in admin → Site Settings → SEO Defaults section. No `canonical_base
 
 `app/robots.ts` — allows all crawlers, disallows `/api/` and `/_next/`, references sitemap URL built from `getBaseUrl()`.
 
-`app/sitemap.ts` — lists homepage + published model pages only. Brand query param URLs (`/?brand=slug`) intentionally excluded. When `/category/[slug]` or `/brand/[slug]` pages are built, add their entries here at the same time as the route file.
+`app/sitemap.ts` — lists homepage, `/archive`, published model pages and category listings. Brand query param URLs (`/archive?brand=slug`) intentionally excluded. When `/category/[slug]` or `/brand/[slug]` pages are built, add their entries here at the same time as the route file.
 
 ---
 
@@ -886,3 +893,128 @@ Completion gate:
 [ ] New public reads return null/[] on error, never throw
 [ ] New admin tabs follow BrandsTab.tsx pattern
 ```
+
+---
+
+## 23. v10 Studio Homepage (DAINEKU — Real-Time Simulation & Spatial Design)
+
+### Routes
+
+| Route | What |
+|---|---|
+| `/` | Studio site. Server components in `components/studio/`. Supabase content: social links and up to three Journal articles. |
+| `/journal`, `/journal/<slug>` | Studio Journal (table `studio_articles`, edited in the admin → **Journal**). Read per request. |
+| `/archive` | The JDM feed (was `/`). `MasonryGallery` + `PhotoGrid`, unchanged batching/ordering. Brand chips → `/archive?brand=<slug>`. |
+| `/?brand=<slug>` | 307 → `/archive?brand=<slug>` (`next.config.ts` redirects, query preserved). Bare `/` is unaffected. |
+
+Admin → **Archive Feed** (was "Homepage") curates `/archive`. Data model unchanged (`show_on_home`, `home_sort_order`).
+
+### Studio files
+
+- `components/studio/content.ts` — all homepage copy. No invented clients, metrics or awards; The Kanjo is an own project *in development*.
+- `components/studio/studio.css` — design system, every rule scoped under `.studio` / `st-*`. The `.studio a` reset uses `:where()` (zero specificity) so it beats the legacy global `a { color: #39FF14 }` by source order without overriding component classes.
+- `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `Cover` (whole image, framed by object-position only, separate desktop/mobile positions), `SectionHeading`, `SectionDivider`, `delay()`.
+- `components/studio/visuals.tsx` — `SimulationDiagram` (the services card's vehicle-path figure). Decorative.
+- Homepage order (`app/page.tsx`): Hero → `StudioServices` (What We Build) → `SelectedWork` (The Kanjo + Developed systems) → `JournalSection` (hidden with no published article) → `ProcessSection` → `StudioContact`. Why Daineku, Technical Production and Studio were removed in v10.3 as repetition.
+- `components/studio/Reveal.tsx` — one IntersectionObserver for `[data-reveal]`. Content is visible in server HTML; the hidden state is armed only after mount and never under `prefers-reduced-motion`.
+
+### Brand assets — `public/images/brand/`
+
+`logo.png`, `title.png`, `hero.png`, `divider.png` are the originals (moved from `components/`). `logo-mark.png`, `title-wordmark.png`, `divider-line.png` are the same pixels with transparent padding trimmed. `og.jpg` is a 1200×630 crop of `hero.png`.
+The divider's green line is low-contrast on near-black — it is placed on the ivory band (Process) and once in the footer.
+
+`public/images/projects/thekanjo-hero.webp` is **The Kanjo's own hero artwork**, not a DAINEKU brand image: source `daineku/kanjo` → `public/media/hero/hero.png` (6336×2688 PNG, 18.2 MB, sha256 `006fc676…0499378`), resized with Sharp to 2560×1086 WebP q80 (190 KB); next/image serves sized variants from it. Framing is object-position only (`70% 58%` desktop, `72% 50%` mobile — the source's own phone framing); the red car sits at x 47–88 % of the frame. To refresh it, regenerate from the Kanjo repository's file — never hotlink GitHub.
+
+### Fonts
+
+No font is fetched from Google — at build time or runtime.
+
+- **Manrope** (body, admin, legacy pages, studio) — `@font-face` in `app/globals.css` under the real family name `Manrope`, files in `app/fonts/` (latin, latin-ext, cyrillic variable subsets — byte-identical to what Google Fonts served). Admin inline styles that say `fontFamily: 'Manrope'` keep working.
+- **Space Grotesk** (studio display) — `next/font/local` in `app/layout.tsx` (`--font-display`).
+- **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build.
+- `@font-face` must stay *after* `@import "tailwindcss"` (CSS `@import` must precede all other rules).
+
+### Positioning & copy (v10.3)
+
+All homepage copy lives in `components/studio/content.ts`; each section has one job (see the header comment there). British English throughout. The page says what the studio builds, not what kind of organisation it is — no "independent studio" lines.
+
+- **Hero** — the one positioning statement: real-time simulation, interactive 3D environments, cinematic visuals. The meta row gives the specifics (vehicle dynamics · AI traffic, worldbuilding · lighting, trailers · in-engine film).
+- **What We Build** — Real-Time Simulation (vehicle dynamics, AI traffic, interactive software, prototypes) · Spatial Design (navigable environments, worldbuilding, scene construction, lighting, rendering) · Cinematic Production (trailers, in-engine cinematics, key art, edit and grade). No interior/architectural design, no client quotes.
+- **Selected Work** — The Kanjo, with its real artwork. The **only** link to `https://www.thekanjo.com/` on the page (`KANJO_URL`, "Explore The Kanjo ↗"). Facts: Type, Status, **Core System — Real Car Simulation** (the engine is deliberately not named). Under it, **Developed systems** (`WORK.kanjo.systems`): five systems, each with a status — *Implemented* (runs in the current internal build) or *In progress* (runs, with open defects) — a description of behaviour and four items that were built.
+- **Process** and **Contact** carry practical information only.
+- Every technical statement about The Kanjo was checked against the game project before publication. The systems list was checked against the game repository on 12 October 2026: AI Traffic and Rival Racing are *In progress* because of open defects; wheel support is validated on the MOZA R3 only. Do not upgrade a status, name other wheels, or add performance figures, platforms, clients or a showreel without checking again.
+
+### Contact — project enquiries
+
+Form fields: name, email, project type (Simulation & Interactive Development / Digital Environment / Spatial Design / Cinematic & Video Production / Other — `PROJECT_TYPE_VALUES` in `lib/contact.ts`), optional timeline, project description. Validation is shared (`lib/contact.ts`) by the form and the server.
+
+**Delivery modes** (decided on the server per request, `app/page.tsx`):
+
+| Configured | Behaviour |
+|---|---|
+| `RESEND_API_KEY` + `CONTACT_FROM_EMAIL` + an inbox | **server**: `POST /api/contact` → Resend → inbox. Success is shown only after Resend returns 2xx with an id; failures show an error plus the direct address. |
+| only `CONTACT_EMAIL` | **mailto** fallback: drafts the enquiry in the visitor's email app and says so. |
+| nothing | no form; socials or a "being set up" line. |
+
+Env (all server-side, read at request time — no rebuild needed, but Vercel applies env changes only to new deployments, so redeploy):
+
+- `CONTACT_EMAIL` — public studio address shown on the page and used as the mailto fallback (legacy `NEXT_PUBLIC_CONTACT_EMAIL` still honoured).
+- `CONTACT_TO_EMAIL` — optional; inbox for enquiries, defaults to `CONTACT_EMAIL`.
+- `RESEND_API_KEY` — secret.
+- `CONTACT_FROM_EMAIL` — sender on a domain **verified in Resend**, e.g. `DAINEKU <studio@daineku.com>`.
+- `RESEND_API_URL` — test only (the smoke suite points it at `tests/mock-resend.mjs`).
+
+Endpoint guards (`app/api/contact/route.ts`): JSON only, 16 KB cap, same-origin `Origin`, honeypot field `website` (silently accepted, never forwarded), minimum fill time 2.5 s measured by the form, 5 submissions / 10 min per client IP (**in-memory, per serverless instance** — a burst limiter, not a global quota), server-side validation with control-character rejection in single-line fields. The recipient is fixed by configuration; anything the browser sends as a recipient is ignored. Reply-To = the visitor's validated address; subject `Project enquiry — <type> — <name>`. Nothing is stored; logs carry only the HTTP status.
+
+### Journal — studio articles
+
+**Data:** one additive table, `studio_articles` (`supabase/migration_v10a_studio_articles.sql`): slug (unique, format-checked), title, excerpt, body (Markdown), category (free text), cover_image_url + cover_alt, is_published, is_featured, sort_order, published_at, created/updated_at (trigger). No legacy table is touched.
+
+- **Access:** RLS on from creation. `anon`/`authenticated` get `SELECT` only, and the policy limits it to `is_published and published_at <= now()`. All writes go through the admin API with the service-role key (server only).
+- **Applying it:** run `supabase/audit/security_audit.sql` first and keep the output as the snapshot; then run the migration in the SQL editor. It is re-runnable (every statement is guarded). Rollback (only if nothing must be kept): `drop table public.studio_articles; drop function public.studio_articles_touch();`.
+- **Before the table exists** every Journal read returns empty (one warning in the logs): the homepage section is hidden and `/journal` says "No articles have been published yet." Nothing else is affected.
+
+**Admin → Journal** (`app/[adminPath]/components/JournalTab.tsx`, API `app/api/admin/journal/*`, same `x-admin-secret` auth): create, edit, save draft, publish / unpublish (confirmed), slug suggested from the title (`slugify`, validated by `articleSlug`), category with suggestions, excerpt and body with counters, cover upload to R2 (`upload-asset`, folder `journal/`) or pick from previously uploaded Journal images (`/api/admin/journal/media`, R2 list), required alt text for covers, featured toggle and featured order (↑/↓ → `/api/admin/journal/order`), delete with confirmation, and **Preview** rendered with the public components before publishing.
+
+**Validation** (`lib/validation/journal.ts`, strict Zod — unknown fields rejected): limits mirror the table constraints; covers must live on `R2_PUBLIC_URL`; publishing needs an excerpt and a body; a cover needs alt text. First publication stamps `published_at`; unpublishing keeps it.
+
+**Rendering:** `components/studio/ArticleBody.tsx` — `react-markdown` + `remark-gfm`, `skipHtml` (raw HTML is dropped, so no `<script>`/`<iframe>`), default URL transform (no `javascript:`), images HTTPS-only, body headings start at h2. Public pages and the sitemap are `force-dynamic`, so a save is live immediately — no deploy and no revalidation step. The homepage shows up to three: featured first (in admin order), then newest.
+
+Client components import Journal types and helpers from `lib/journalShared.ts`, never `lib/journal.ts` — the latter imports the Supabase client and must stay out of browser bundles.
+
+### Database access (legacy tables)
+
+The legacy archive tables pre-date this work and run with RLS disabled (see `migration_v4_fix_rls.sql`). Their access configuration was reviewed in October 2026; the findings and a tested, reversible remediation were handed to the owner privately, not in this public repository. The site performs every write with the service-role key, so restricting the public API roles does not affect the admin. `supabase/audit/security_audit.sql` (read-only) shows the current grants and policies.
+
+### Loader
+
+`SpeedometerLoader` is deleted. `MasonryGallery` renders as soon as the first batch arrives (the fake progress interval and 250 ms delay are gone); first load shows a static skeleton; the infinite-scroll sentinel is an empty 96 px div. `fetchedCountRef` / `isFetchingRef` untouched.
+
+### Admin header suppression (middleware)
+
+`middleware.ts` forwards `x-is-admin: 1` on the **request** (`NextResponse.next({ request: { headers } })`) for `/<ADMIN_SECRET_PATH>` and its sub-paths, and always deletes any client-supplied `x-is-admin` first. Previously it set the flag on the *response*: that only worked because the self-hosted Next router copies middleware response headers into the request (not a documented contract), any visitor could send `x-is-admin: 1` to strip the public header/footer, and the flag leaked to clients. Admin auth (`isAuthed`, `x-admin-secret`) is unchanged.
+
+### Quality gates (all enforced)
+
+| Command | Expectation |
+|---|---|
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 errors (4 accepted warnings: 3 admin `<img>`, 1 deliberate `exhaustive-deps` in MasonryGallery — "fixing" it changes fetch behaviour) |
+| `npm run test:description` | 13 passed |
+| `npm run test:contact` | 8 passed — enquiry validation (`lib/contact.test.ts`, Node test runner) |
+| `npm run test:journal` | 6 passed — article validation and slugs (`lib/journal.test.ts`) |
+| `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
+| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 63 passed, 11 skipped by design |
+
+- `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
+- Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.
+- supabase-js has no generated DB types here, so it infers every embedded relation as an array. Many-to-one FK embeds are single objects at runtime — declare the row shape with `.overrideTypes<Row[], { merge: false }>()` (see `getModelBuildInstances`).
+- Smoke tests start `next start` with a random throwaway `ADMIN_SECRET_PATH` and mock `/api/photos`; they need no Supabase/R2 credentials. `tests/mock-backend.mjs` stands in for Supabase (the `studio_articles` subset of PostgREST, emulating the RLS rule: anon sees published rows only and cannot write) and for R2 (put, list, public URLs). The app is pointed at it with the test-only `SUPABASE_URL_OVERRIDE` and `R2_ENDPOINT` — **never set those in Vercel**. Admin tests send their own `x-forwarded-for` because the admin API rate-limits to 60 requests/min per IP. The archive pagination test asserts batch sizes through the request sequence, not through an intermediate card count: on short viewports the sentinel is visible as soon as the first batch renders, so the second batch can arrive before a snapshot sees exactly 11 cards (this was the source of an old intermittent failure). Contact delivery runs end to end against a local mock provider (`tests/mock-resend.mjs`) with a reserved `.invalid` inbox — it proves the app's delivery code, **not** real Resend delivery. First run: `npx playwright install chromium`.
+
+### Known pre-existing issue (not changed)
+
+`lib/validation/build-instances.ts` — `BuildInstanceCreateSchema` / `UpdateSchema` do not declare `photo_ids`, and Zod strips unknown keys, so photos selected in the admin Builds tab are never linked through `/api/admin/car-build-instances`. Fixing it changes admin data writes, so it is left for a separate, deliberate change.
+
+### Missing model pages
+
+`/cars/<unknown>` renders the not-found UI with `noindex`, but the HTTP status is 200: `app/cars/[slug]/loading.tsx` is a streaming boundary, so the status is committed before `notFound()` runs (same structure as before v10).

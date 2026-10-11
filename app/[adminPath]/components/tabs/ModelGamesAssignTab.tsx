@@ -17,12 +17,12 @@ export function ModelGamesAssignTab({ carId, adminSecret, onToast }: Props) {
     setError('')
     try {
       const [gamesRes, assignRes] = await Promise.all([
-        api('global-games', 'GET', undefined, adminSecret),
-        api(`car-games?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ globalGames: GlobalGame[] }>('global-games', 'GET', undefined, adminSecret),
+        api<{ gameIds: string[] }>(`car-games?car_id=${carId}`, 'GET', undefined, adminSecret),
       ])
       setAllGames(gamesRes.globalGames || [])
       setAssigned(new Set(assignRes.gameIds || []))
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
@@ -40,7 +40,7 @@ export function ModelGamesAssignTab({ carId, adminSecret, onToast }: Props) {
         await api('car-games', 'POST', { car_id: carId, game_id: gameId }, adminSecret)
         setAssigned(prev => new Set([...prev, gameId]))
       }
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setToggling(null) }
   }
 

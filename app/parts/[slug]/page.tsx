@@ -85,7 +85,7 @@ export default async function PartCategoryPage({ params }: Props) {
 
         {/* Product cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginTop: category.page_description ? 0 : 36 }}>
-          {parts.map((part: any) => (
+          {parts.map(part => (
             <div key={part.id} style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 4, overflow: 'hidden' }}>
               {/* Product image */}
               {part.image_url ? (
@@ -108,7 +108,7 @@ export default async function PartCategoryPage({ params }: Props) {
                 {/* Key specs */}
                 {part.key_specs && part.key_specs.length > 0 && (
                   <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 12px', marginBottom: 10 }}>
-                    {part.key_specs.map((spec: any, i: number) => (
+                    {part.key_specs.map((spec: { label: string; value: string }, i: number) => (
                       <div key={i}>
                         <dt style={{ fontSize: 9, color: '#444', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{spec.label}</dt>
                         <dd style={{ fontSize: 12, color: '#aaa', margin: 0 }}>{spec.value}</dd>

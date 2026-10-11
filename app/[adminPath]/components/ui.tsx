@@ -74,7 +74,11 @@ export function ErrorBanner({ message }: { message: string }) {
 }
 
 // Safe API helper with typed error handling
-export async function api(path: string, method = 'GET', body?: unknown, secret?: string): Promise<any> {
+/**
+ * Admin API call. Pass the expected response shape: `await api<{ cars: Model[] }>('cars', ...)`.
+ * Defaults to `unknown` so an un-annotated result cannot be used without a type.
+ */
+export async function api<T = unknown>(path: string, method = 'GET', body?: unknown, secret?: string): Promise<T> {
   const res = await fetch(`/api/admin/${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret || '' },
@@ -82,7 +86,12 @@ export async function api(path: string, method = 'GET', body?: unknown, secret?:
   })
   const json = await res.json().catch(() => ({ error: res.statusText }))
   if (!res.ok) throw new Error(json.error || `Request failed: ${res.status}`)
-  return json
+  return json as T
+}
+
+/** Message for a caught value. API/fetch failures are always Error instances. */
+export function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
 }
 
 export function useToast() {

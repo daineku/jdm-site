@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, Toggle, EmptyState, ErrorBanner, api, useToast, MUTED, G } from './ui'
+import { s, Field, Toggle, EmptyState, ErrorBanner, api, useToast, MUTED, G, errorMessage } from './ui'
 import { ImageUploadField } from './ImageUploadField'
 import { PartCategoriesTab } from './PartCategoriesTab'
 import type { GlobalPart, PartCategory } from '@/lib/types'
@@ -38,18 +38,18 @@ export function PartsSection({ adminSecret }: { adminSecret: string }) {
     setLoading(true); setError('')
     try {
       const [partsRes, catRes] = await Promise.all([
-        api('global-parts', 'GET', undefined, adminSecret),
-        api('part-categories', 'GET', undefined, adminSecret),
+        api<{ globalParts?: GlobalPart[] }>('global-parts', 'GET', undefined, adminSecret),
+        api<{ partCategories?: PartCategory[] }>('part-categories', 'GET', undefined, adminSecret),
       ])
       setParts(partsRes.globalParts || [])
       setCategories(catRes.partCategories || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
     finally { setLoading(false) }
   }, [adminSecret])
 
   useEffect(() => { if (tab === 'parts') load() }, [tab, load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY); setEditing(null) }
 
   const addSpec = () => setForm(f => ({ ...f, key_specs: [...f.key_specs, { label: '', value: '' }] }))
@@ -69,7 +69,7 @@ export function PartsSection({ adminSecret }: { adminSecret: string }) {
         affiliate_url: form.affiliate_url.trim() || null,
         price_range: form.price_range.trim() || null,
         key_specs: form.key_specs.filter(s => s.label.trim() && s.value.trim()),
-        availability: (form.availability as any) || null,
+        availability: form.availability || null,
         is_featured: form.is_featured,
         sort_order: form.sort_order,
         is_published: form.is_published,
@@ -78,14 +78,14 @@ export function PartsSection({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('global-parts', 'PUT', { id: editing, ...payload }, adminSecret)
       else await api('global-parts', 'POST', payload, adminSecret)
       cancel(); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, title: string) => {
     if (!confirm(`Delete part "${title}"? All model assignments will be removed.`)) return
     try { await api('global-parts', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (p: GlobalPart) => {
@@ -122,7 +122,7 @@ export function PartsSection({ adminSecret }: { adminSecret: string }) {
           <ErrorBanner message={error} />
           <p style={s.secTitle}>{editing ? 'Edit Part' : 'Add Part'}</p>
           <p style={{ fontSize: 11, color: MUTED, marginBottom: 14 }}>
-            Parts are global affiliate/product entries. Assign them to models via each model's Parts tab.
+            Parts are global affiliate/product entries. Assign them to models via each model&apos;s Parts tab.
           </p>
           <div style={s.card}>
             <div style={s.g2}>

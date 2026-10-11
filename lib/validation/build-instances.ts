@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { safeImageUrl } from './shared'
 
 const wheelField = z.string().max(50).nullable().optional()
 

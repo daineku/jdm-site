@@ -6,7 +6,7 @@ import { isAuthed } from '@/lib/adminAuth'
 export async function POST(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: any
+  let body: { carId?: string; fileName?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { carId, fileName } = body
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       originalPublicUrl: `${process.env.R2_PUBLIC_URL}/${originalKey}`,
       thumbPublicUrl: `${process.env.R2_PUBLIC_URL}/${thumbKey}`,
     })
-  } catch (e: any) {
-    return NextResponse.json({ error: `Failed to generate upload URLs: ${e.message}` }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: `Failed to generate upload URLs: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 })
   }
 }

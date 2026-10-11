@@ -31,8 +31,8 @@ export function ImageUploadField({ label, value, onChange, adminSecret, uploadTy
       const data = await res.json()
       if (!res.ok || !data.url) throw new Error(data.error || 'Upload failed')
       onChange(data.url)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setUploading(false)
     }

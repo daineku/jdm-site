@@ -17,12 +17,12 @@ export function ModelStyleTab({ carId, adminSecret, onToast }: Props) {
     setError('')
     try {
       const [catRes, assignRes] = await Promise.all([
-        api('build-categories', 'GET', undefined, adminSecret),
-        api(`car-categories?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ buildCategories: BuildCategory[] }>('build-categories', 'GET', undefined, adminSecret),
+        api<{ categoryIds: string[] }>(`car-categories?car_id=${carId}`, 'GET', undefined, adminSecret),
       ])
       setAllCategories(catRes.buildCategories || [])
       setAssigned(new Set(assignRes.categoryIds || []))
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
@@ -40,7 +40,7 @@ export function ModelStyleTab({ carId, adminSecret, onToast }: Props) {
         await api('car-categories', 'POST', { car_id: carId, category_id: categoryId }, adminSecret)
         setAssigned(prev => new Set([...prev, categoryId]))
       }
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setToggling(null) }
   }
 

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     .eq('car_id', carId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ categoryIds: (data || []).map((r: any) => r.category_id) })
+  return NextResponse.json({ categoryIds: (data || []).map((r: { category_id: string }) => r.category_id) })
 }
 
 // POST: add a single category assignment (idempotent)

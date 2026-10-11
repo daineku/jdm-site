@@ -1,12 +1,25 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Script from 'next/script'
+import localFont from 'next/font/local'
 import './globals.css'
+import '@/components/studio/studio.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getSiteSettings } from '@/lib/data'
 import { buildSiteConfig } from '@/lib/siteConfig'
 import { getBaseUrl } from '@/lib/seo'
+import { getSocialLinks } from '@/lib/social'
+
+// Studio display face, self-hosted from app/fonts (SIL OFL). Committed file + next/font/local
+// rather than next/font/google (whose 15.3.6 loader crashes on current Google responses).
+const display = localFont({
+  src: './fonts/SpaceGrotesk-Variable-latin.woff2',
+  weight: '300 700',
+  variable: '--font-display',
+  display: 'swap',
+})
+// Body face (Manrope) is declared once in globals.css under its real family name.
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()
@@ -66,18 +79,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isAdmin = headersList.get('x-is-admin') === '1'
 
   const siteConfig = buildSiteConfig(settings)
+  const socials = getSocialLinks(settings)
 
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={display.variable}>
       <body>
-        {!isAdmin && <Header />}
-        {children}
-        {!isAdmin && <Footer config={siteConfig} />}
+        {!isAdmin && <Header socials={socials} />}
+        {isAdmin ? children : <div id="main" tabIndex={-1} style={{ outline: 'none' }}>{children}</div>}
+        {!isAdmin && <Footer config={siteConfig} socials={socials} />}
         {/* GA4 — afterInteractive so it never blocks page render */}
         {ga4Id && (
           <>

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED } from './ui'
+import { s, Field, Toggle, ErrorBanner, EmptyState, api, useToast, MUTED, errorMessage } from './ui'
 import { ImageUploadField } from './ImageUploadField'
 import type { PartCategory } from '@/lib/types'
 
@@ -22,14 +22,14 @@ export function PartCategoriesTab({ adminSecret }: { adminSecret: string }) {
 
   const load = useCallback(async () => {
     try {
-      const d = await api('part-categories', 'GET', undefined, adminSecret)
+      const d = await api<{ partCategories?: PartCategory[] }>('part-categories', 'GET', undefined, adminSecret)
       setCategories(d.partCategories || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(errorMessage(e)) }
   }, [adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY); setEditing(null) }
 
   const save = async () => {
@@ -40,14 +40,14 @@ export function PartCategoriesTab({ adminSecret }: { adminSecret: string }) {
       if (editing) await api('part-categories', 'PUT', { id: editing, ...form }, adminSecret)
       else await api('part-categories', 'POST', form, adminSecret)
       cancel(); load(); show('Saved')
-    } catch (e: any) { show(e.message, 'error') }
+    } catch (e) { show(errorMessage(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, name: string) => {
     if (!confirm(`Delete part category "${name}"? Parts using it will become uncategorised.`)) return
     try { await api('part-categories', 'DELETE', { id }, adminSecret); load(); show('Deleted') }
-    catch (e: any) { show(e.message, 'error') }
+    catch (e) { show(errorMessage(e), 'error') }
   }
 
   const edit = (c: PartCategory) => {

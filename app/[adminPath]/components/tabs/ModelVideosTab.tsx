@@ -13,12 +13,12 @@ export function ModelVideosTab({ carId, adminSecret, onToast }: Props) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    api(`videos?car_id=${carId}`, 'GET', undefined, adminSecret)
-      .then((d: any) => setVideos(d.videos || []))
-      .catch((e: any) => onToast(e.message, 'error'))
+    api<{ videos: Video[] | null }>(`videos?car_id=${carId}`, 'GET', undefined, adminSecret)
+      .then(d => setVideos(d.videos || []))
+      .catch((e: unknown) => onToast(e instanceof Error ? e.message : String(e), 'error'))
   }, [carId, adminSecret]) // eslint-disable-line
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) => setForm(f => ({ ...f, [k]: v }))
   const extractId = (url: string) => { try { const m = url.match(/video\/(\d+)/); return m ? m[1] : '' } catch { return '' } }
 
   const save = async () => {
@@ -26,20 +26,20 @@ export function ModelVideosTab({ carId, adminSecret, onToast }: Props) {
     setSaving(true)
     try {
       const payload = { ...form, car_id: carId, embed_id: form.embed_id || extractId(form.tiktok_url) || null, title: form.title || null }
-      let d
-      if (editing) d = await api('videos', 'PUT', { id: editing, ...payload }, adminSecret)
-      else d = await api('videos', 'POST', payload, adminSecret)
+      let d: { video: Video }
+      if (editing) d = await api<{ video: Video }>('videos', 'PUT', { id: editing, ...payload }, adminSecret)
+      else d = await api<{ video: Video }>('videos', 'POST', payload, adminSecret)
       if (editing) setVideos(prev => prev.map(v => v.id === editing ? d.video : v))
       else setVideos(prev => [...prev, d.video])
       setForm(empty); setEditing(null); onToast('Saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete?')) return
     try { await api('videos', 'DELETE', { id }, adminSecret); setVideos(prev => prev.filter(v => v.id !== id)); onToast('Deleted') }
-    catch (e: any) { onToast(e.message, 'error') }
+    catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const edit = (v: Video) => {

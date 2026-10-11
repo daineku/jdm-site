@@ -81,7 +81,7 @@ export default function CarPageClient({ model, photos, builds, accessories, vide
                     {build.description && <p className="text-[#777] text-sm mb-4 leading-relaxed">{build.description}</p>}
                     {build.build_parts && build.build_parts.length > 0 ? (
                       <ul className="space-y-1">
-                        {[...build.build_parts].sort((a: any, b: any) => a.sort_order - b.sort_order).map((part: any) => (
+                        {[...build.build_parts].sort((a, b) => a.sort_order - b.sort_order).map(part => (
                           <li key={part.id} className="text-xs flex items-start gap-2" style={{ color: '#555' }}>
                             <span style={{ color: '#39FF14', marginTop: 1 }}>›</span>
                             <span>{part.name}{part.notes && <span style={{ color: '#444' }}> — {part.notes}</span>}</span>
@@ -445,7 +445,7 @@ export default function CarPageClient({ model, photos, builds, accessories, vide
             <SectionLabel>Builds</SectionLabel>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               {buildInstances.map(build => {
-                const sortedPhotos = (build.photos || []).sort((a: any, b: any) => a.sort_order - b.sort_order)
+                const sortedPhotos = (build.photos || []).sort((a, b) => a.sort_order - b.sort_order)
                 const featuredThumb = sortedPhotos[0]?.photo?.thumb_url || sortedPhotos[0]?.photo?.url || null
                 return (
                   <div key={build.id}

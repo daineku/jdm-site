@@ -1,6 +1,6 @@
 # DAINEKU
 
-A premium JDM (Japanese Domestic Market) automotive archive site with an admin panel.
+DAINEKU — independent studio for real-time simulation & spatial design. The studio site lives at `/`, the studio Journal at `/journal` (managed in the admin → Journal); the original car editorial archive lives at `/archive`. See HANDOFF.md §23.
 
 **Live:** daineku.com  
 **Admin:** `daineku.com/<ADMIN_SECRET_PATH>`  
@@ -10,7 +10,7 @@ A premium JDM (Japanese Domestic Market) automotive archive site with an admin p
 
 ## What this is
 
-An editorial photo archive for JDM car models. Not a car listing or database. The homepage is a hand-curated photo feed managed by the owner. Model pages show a photo gallery, description, builds, accessories, videos, game appearances, build style categories, wheel specs, fitment data, and aftermarket mods.
+The DAINEKU studio website (homepage, Journal, contact) plus, under `/archive`, the original editorial photo archive for JDM car models. Not a car listing or database. The homepage is a hand-curated photo feed managed by the owner. Model pages show a photo gallery, description, builds, accessories, videos, game appearances, build style categories, wheel specs, fitment data, and aftermarket mods.
 
 ## What this is NOT
 
@@ -64,6 +64,10 @@ R2_BUCKET_NAME=jdm-photos
 R2_PUBLIC_URL=https://pub-xxx.r2.dev   # R2 public bucket URL (no trailing slash)
 ADMIN_SECRET_PATH=admin...             # URL path and request header secret (>=32 chars)
 NEXT_PUBLIC_SITE_URL=https://daineku.com  # Used by sitemap.ts (optional, defaults to daineku.com)
+CONTACT_EMAIL=                   # Public studio address (email link + mailto fallback). Server-side, read at request time.
+CONTACT_TO_EMAIL=                # Optional inbox for enquiries (defaults to CONTACT_EMAIL)
+RESEND_API_KEY=                  # Resend key — enables server-side enquiry delivery (secret)
+CONTACT_FROM_EMAIL=              # Sender on a Resend-verified domain, e.g. "DAINEKU <studio@daineku.com>"
 ```
 
 ### Feature flag overrides (optional)
@@ -141,9 +145,18 @@ git push -u origin main --force
 
 ```bash
 npm run test:description   # 13-case unit test for description text formatter
+npm run test:contact       # enquiry validation unit tests
+npm run test:journal       # Journal article validation unit tests
 ```
 
 Expected output: `13 passed, 0 failed`. Must pass before every deploy.
+
+```bash
+npx tsc --noEmit           # 0 errors
+npm run lint               # 0 errors
+npm run build              # fails on type or lint errors
+npm run test:smoke         # Playwright smoke suite against the build (run `npx playwright install chromium` once)
+```
 
 ---
 
@@ -181,7 +194,7 @@ The admin panel is organized into two sidebar groups:
 
 ## Services used
 
-**Supabase** — PostgreSQL database + anon/service-role access. RLS is disabled on all tables (single-owner site, no public write access). If `SUPABASE_SERVICE_ROLE_KEY` is missing, a console warning is emitted on server start and admin writes fall back to anon key.
+**Supabase** — PostgreSQL database + anon/service-role access. Public pages read with the anon key; every write goes through the service-role key on the server. `studio_articles` has RLS (published rows only); the legacy archive tables run without RLS — see HANDOFF.md §23 "Database access". If `SUPABASE_SERVICE_ROLE_KEY` is missing, a console warning is emitted on server start and admin writes fall back to anon key.
 
 **Cloudflare R2** — Object storage for images. Two objects per photo: full size (max 2400px) and thumbnail (max 800px). R2 public access must be enabled on the `jdm-photos` bucket.
 

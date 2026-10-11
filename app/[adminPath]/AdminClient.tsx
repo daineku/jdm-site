@@ -9,11 +9,13 @@ import { BuildCategoriesTab } from './components/BuildCategoriesTab'
 import { PartCategoriesTab } from './components/PartCategoriesTab'
 import { BuildsSection } from './components/BuildsSection'
 import { PartsSection } from './components/PartsSection'
-import { isAdminEnabled } from '@/lib/features'
+import { JournalTab } from './components/JournalTab'
 
 const SPIN_STYLE = `@keyframes spin { to { transform: rotate(360deg); } }`
 
 // ── Canonical admin IA ────────────────────────────────────────────────────────
+// STUDIO  — the studio site's own content
+//   Journal            (studio_articles)
 // GLOBAL  — entities that exist independently of any model (taxonomies, config)
 //   Site Settings
 //   Build Categories   (v5, feature-flagged)
@@ -23,7 +25,7 @@ const SPIN_STYLE = `@keyframes spin { to { transform: rotate(360deg); } }`
 
 type CoreSection = 'models' | 'homepage' | 'accessories' | 'brands' | 'settings'
 type V5Section   = 'builds' | 'parts' | 'build-categories' | 'part-categories'
-type Section     = CoreSection | V5Section
+type Section     = CoreSection | V5Section | 'journal'
 
 const G  = '#39FF14'
 const BG = '#0a0a0a'
@@ -36,19 +38,21 @@ export default function AdminClient({ adminSecret }: { adminSecret: string }) {
   type NavItem = { key: Section; label: string; icon: string; group: string }
 
   const NAV: NavItem[] = [
+    { key: 'journal',     label: 'Journal',       icon: '✎', group: 'Studio' },
     { key: 'settings',    label: 'Site Settings', icon: '\u25C9', group: 'Global' },
     { key: 'builds',      label: 'Builds',        icon: '\u25C8', group: 'Global' },
     { key: 'parts',       label: 'Parts',         icon: '\u25A6', group: 'Global' },
     { key: 'models',      label: 'Models',        icon: '\u2B21', group: 'Content' },
-    { key: 'homepage',    label: 'Homepage',      icon: '\u229E', group: 'Content' },
+    { key: 'homepage',    label: 'Archive Feed',  icon: '\u229E', group: 'Content' },
     { key: 'brands',      label: 'Brands',        icon: '\u25C7', group: 'Content' },
     { key: 'accessories', label: 'Accessories ⚠ Legacy', icon: '\u25CE', group: 'Legacy' },
   ]
 
-  const groups = ['Global', 'Content', 'Legacy']
+  const groups = ['Studio', 'Global', 'Content', 'Legacy']
 
   const renderSection = () => {
     switch (section) {
+      case 'journal':          return <JournalTab          adminSecret={adminSecret} />
       case 'models':           return <ModelEditor adminSecret={adminSecret} />
       case 'homepage':         return <HomepageTab adminSecret={adminSecret} />
       case 'accessories':      return <AccessoriesTab adminSecret={adminSecret} />

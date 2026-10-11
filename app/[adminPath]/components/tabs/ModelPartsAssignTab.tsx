@@ -18,14 +18,14 @@ export function ModelPartsAssignTab({ carId, adminSecret, onToast }: Props) {
     setLoading(true); setError('')
     try {
       const [partsRes, catRes, assignRes] = await Promise.all([
-        api('global-parts', 'GET', undefined, adminSecret),
-        api('part-categories', 'GET', undefined, adminSecret),
-        api(`model-parts?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ globalParts: GlobalPart[] }>('global-parts', 'GET', undefined, adminSecret),
+        api<{ partCategories: PartCategory[] }>('part-categories', 'GET', undefined, adminSecret),
+        api<{ partIds: string[] }>(`model-parts?car_id=${carId}`, 'GET', undefined, adminSecret),
       ])
       setAllParts(partsRes.globalParts || [])
       setCategories(catRes.partCategories || [])
       setAssigned(new Set(assignRes.partIds || []))
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
@@ -43,7 +43,7 @@ export function ModelPartsAssignTab({ carId, adminSecret, onToast }: Props) {
         await api('model-parts', 'POST', { car_id: carId, part_id: partId }, adminSecret)
         setAssigned(prev => new Set([...prev, partId]))
       }
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setToggling(null) }
   }
 

@@ -77,7 +77,7 @@ export default async function BuildCategoryPage({ params }: Props) {
             columnGap: 12,
             marginTop: category.page_description ? 0 : 40,
           }}>
-            {photos.map((photo: any) => (
+            {photos.map(photo => (
               <div key={photo.id} style={{ breakInside: 'avoid', marginBottom: 12 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

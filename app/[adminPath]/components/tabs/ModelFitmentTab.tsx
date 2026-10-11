@@ -5,6 +5,8 @@ import type { CarFitment } from '@/lib/types'
 
 type Props = { carId: string; adminSecret: string; onToast: (msg: string, type?: 'success' | 'error') => void }
 type FormState = Omit<CarFitment, 'id' | 'car_id' | 'created_at' | 'updated_at'>
+/** The free-text / select fields (everything except the is_visible toggle). */
+type TextKey = Exclude<keyof FormState, 'is_visible'>
 
 const EMPTY: FormState = {
   fitment_style: null, ride_height: null, camber_look: null,
@@ -20,6 +22,14 @@ const RIDE_HEIGHTS   = ['', 'slammed', 'low', 'daily', 'stock']
 const CAMBER_LOOKS   = ['', 'aggressive', 'slight', 'zero']
 
 const txt = (v: string | null) => v ?? ''
+
+type RowMeta = 'id' | 'car_id' | 'created_at' | 'updated_at'
+/** Copy of a DB row without its bookkeeping columns (same result as rest-destructuring them away). */
+function stripMeta<T extends Record<RowMeta, unknown>>(row: T): Omit<T, RowMeta> {
+  const copy: Partial<T> = { ...row }
+  delete copy.id; delete copy.car_id; delete copy.created_at; delete copy.updated_at
+  return copy as Omit<T, RowMeta>
+}
 const nul = (v: string) => v.trim() || null
 
 export function ModelFitmentTab({ carId, adminSecret, onToast }: Props) {
@@ -31,19 +41,18 @@ export function ModelFitmentTab({ carId, adminSecret, onToast }: Props) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const d = await api(`fitment?car_id=${carId}`, 'GET', undefined, adminSecret)
+      const d = await api<{ fitment: CarFitment | null }>(`fitment?car_id=${carId}`, 'GET', undefined, adminSecret)
       if (d.fitment) {
-        const { id, car_id, created_at, updated_at, ...rest } = d.fitment
-        setForm(rest)
+        setForm(stripMeta(d.fitment))
       }
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: keyof FormState, v: any) => setForm(f => ({ ...f, [k]: v }))
-  const setTxt = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(f => ({ ...f, [k]: v }))
+  const setTxt = (k: TextKey) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     set(k, nul(e.target.value))
 
   const save = async () => {
@@ -51,7 +60,7 @@ export function ModelFitmentTab({ carId, adminSecret, onToast }: Props) {
     try {
       await api('fitment', 'PUT', { car_id: carId, ...form }, adminSecret)
       onToast('Fitment saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 

@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+// SUPABASE_URL_OVERRIDE is a test seam (smoke suite → tests/mock-backend.mjs). NEXT_PUBLIC_* values
+// are inlined at build time, so a runtime override is the only way to point a built app elsewhere.
+// Never set it in Vercel.
+const supabaseUrl = process.env.SUPABASE_URL_OVERRIDE || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
 // Fail-fast: if service role key is missing, admin writes would silently use

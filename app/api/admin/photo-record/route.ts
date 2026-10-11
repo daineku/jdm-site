@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
 
+type PhotoRecordBody = {
+  carId?: string
+  originalUrl?: string
+  thumbUrl?: string
+  orientation?: string
+  caption?: string
+  altText?: string
+}
+
 export async function POST(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: any
+  let body: PhotoRecordBody
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { carId, originalUrl, thumbUrl, orientation, caption, altText } = body

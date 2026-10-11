@@ -44,18 +44,18 @@ export function ModelModsTab({ carId, adminSecret, onToast }: Props) {
     setLoading(true); setError('')
     try {
       const [partsRes, catRes] = await Promise.all([
-        api(`car-aftermarket-parts?car_id=${carId}`, 'GET', undefined, adminSecret),
-        api('part-categories', 'GET', undefined, adminSecret),
+        api<{ parts: Part[] }>(`car-aftermarket-parts?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ partCategories: PartCategory[] }>('part-categories', 'GET', undefined, adminSecret),
       ])
       setParts(partsRes.parts || [])
       setCategories(catRes.partCategories || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof EMPTY_FORM>(k: K, v: (typeof EMPTY_FORM)[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY_FORM); setEditing(null) }
 
   const addSpec = () => setForm(f => ({ ...f, key_specs: [...f.key_specs, { label: '', value: '' }] }))
@@ -78,24 +78,24 @@ export function ModelModsTab({ carId, adminSecret, onToast }: Props) {
         affiliate_url: form.affiliate_url.trim() || null,
         price_range: form.price_range.trim() || null,
         key_specs: form.key_specs.filter(s => s.label.trim() && s.value.trim()),
-        availability: (form.availability as any) || null,
+        availability: (form.availability || null) as Part['availability'],
         is_featured: form.is_featured,
       }
-      let d
-      if (editing) d = await api('car-aftermarket-parts', 'PUT', { id: editing, ...payload }, adminSecret)
-      else d = await api('car-aftermarket-parts', 'POST', payload, adminSecret)
+      let d: { part: Part }
+      if (editing) d = await api<{ part: Part }>('car-aftermarket-parts', 'PUT', { id: editing, ...payload }, adminSecret)
+      else d = await api<{ part: Part }>('car-aftermarket-parts', 'POST', payload, adminSecret)
       const updated = d.part
       if (editing) setParts(prev => prev.map(p => p.id === editing ? updated : p))
       else setParts(prev => [...prev, updated])
       cancel(); onToast('Saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string) => {
     if (!confirm('Delete this part?')) return
     try { await api('car-aftermarket-parts', 'DELETE', { id }, adminSecret); setParts(prev => prev.filter(p => p.id !== id)); onToast('Deleted') }
-    catch (e: any) { onToast(e.message, 'error') }
+    catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const edit = (p: Part) => {

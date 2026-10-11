@@ -27,7 +27,9 @@ const WATERMARK_PNG = Buffer.from(WATERMARK_PNG_B64, 'base64')
  * at left=10%, top=14% — upper third, slightly left of center.
  * Opacity: applied by scaling the PNG alpha channel to 45%.
  */
-async function applyWatermark(sharp: any, inputBuffer: Buffer): Promise<Buffer> {
+type SharpFactory = typeof import('sharp')
+
+async function applyWatermark(sharp: SharpFactory, inputBuffer: Buffer): Promise<Buffer> {
   const meta = await sharp(inputBuffer).metadata()
   const w = meta.width  || 1200
   const h = meta.height || 800
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
   const publicKey    = `cars/${carId}/${ts}_pub.jpg`      // watermarked — public lightbox
   const thumbKey     = `cars/${carId}/${ts}_thumb.jpg`    // clean thumbnail — grids/previews
 
-  let uploadedKeys: string[] = []
+  const uploadedKeys: string[] = []
 
   try {
     const sharp = (await import('sharp')).default
@@ -135,22 +137,24 @@ export async function POST(req: NextRequest) {
     try {
       watermarkedBuffer = await applyWatermark(sharp, originalBuffer)
       console.log('[upload] Watermark buffer created, size:', watermarkedBuffer.length)
-    } catch (wmErr: any) {
-      console.error('[upload] applyWatermark FAILED — rolling back. Error:', wmErr?.message ?? wmErr)
+    } catch (wmErr) {
+      const wmMsg = wmErr instanceof Error ? wmErr.message : undefined
+      console.error('[upload] applyWatermark FAILED — rolling back. Error:', wmMsg ?? wmErr)
       for (const key of uploadedKeys) { try { await deleteFromR2(key) } catch {} }
       return NextResponse.json({
-        error: `Watermark generation failed: ${wmErr?.message ?? 'unknown error'}. Upload rolled back.`
+        error: `Watermark generation failed: ${wmMsg ?? 'unknown error'}. Upload rolled back.`
       }, { status: 500 })
     }
     try {
       publicUrl = await uploadToR2(watermarkedBuffer, publicKey, 'image/jpeg')
       uploadedKeys.push(publicKey)
       console.log('[upload] Watermarked file uploaded to', publicKey)
-    } catch (upErr: any) {
-      console.error('[upload] Watermarked upload FAILED — rolling back. Error:', upErr?.message ?? upErr)
+    } catch (upErr) {
+      const upMsg = upErr instanceof Error ? upErr.message : undefined
+      console.error('[upload] Watermarked upload FAILED — rolling back. Error:', upMsg ?? upErr)
       for (const key of uploadedKeys) { try { await deleteFromR2(key) } catch {} }
       return NextResponse.json({
-        error: `Watermarked image upload failed: ${upErr?.message ?? 'unknown error'}. Upload rolled back.`
+        error: `Watermarked image upload failed: ${upMsg ?? 'unknown error'}. Upload rolled back.`
       }, { status: 500 })
     }
 
@@ -202,11 +206,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ photo: data })
 
-  } catch (e: any) {
+  } catch (e) {
     // Rollback any partially uploaded files
     for (const key of uploadedKeys) {
       try { await deleteFromR2(key) } catch {}
     }
-    return NextResponse.json({ error: `Processing failed: ${e.message}` }, { status: 500 })
+    return NextResponse.json({ error: `Processing failed: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 })
   }
 }

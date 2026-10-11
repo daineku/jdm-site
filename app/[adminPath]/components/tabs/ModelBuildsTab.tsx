@@ -22,20 +22,20 @@ export function ModelBuildsTab({ carId, adminSecret, onToast }: Props) {
     setLoading(true); setError('')
     try {
       const [instRes, catRes, photoRes] = await Promise.all([
-        api(`car-build-instances?car_id=${carId}`, 'GET', undefined, adminSecret),
-        api('build-categories', 'GET', undefined, adminSecret),
-        api(`photos?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ buildInstances: CarBuildInstance[] }>(`car-build-instances?car_id=${carId}`, 'GET', undefined, adminSecret),
+        api<{ buildCategories: BuildCategory[] }>('build-categories', 'GET', undefined, adminSecret),
+        api<{ photos: GalleryPhoto[] }>(`photos?car_id=${carId}`, 'GET', undefined, adminSecret),
       ])
       setInstances(instRes.buildInstances || [])
-      setCategories((catRes.buildCategories || []).filter((c: BuildCategory) => c.is_published || editing))
+      setCategories((catRes.buildCategories || []).filter(c => c.is_published || editing))
       setPhotos(photoRes.photos || [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }, [carId, adminSecret, editing])
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof EMPTY_FORM>(k: K, v: (typeof EMPTY_FORM)[K]) => setForm(f => ({ ...f, [k]: v }))
   const cancel = () => { setForm(EMPTY_FORM); setEditing(null) }
 
   const togglePhoto = (photoId: string) => {
@@ -82,14 +82,14 @@ export function ModelBuildsTab({ carId, adminSecret, onToast }: Props) {
       if (editing) await api('car-build-instances', 'PUT', { id: editing, ...payload }, adminSecret)
       else await api('car-build-instances', 'POST', payload, adminSecret)
       cancel(); load(); onToast('Saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 
   const del = async (id: string, title: string) => {
     if (!confirm(`Delete build "${title}"?`)) return
     try { await api('car-build-instances', 'DELETE', { id }, adminSecret); load(); onToast('Deleted') }
-    catch (e: any) { onToast(e.message, 'error') }
+    catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
   }
 
   const edit = (b: CarBuildInstance) => {
@@ -126,7 +126,7 @@ export function ModelBuildsTab({ carId, adminSecret, onToast }: Props) {
       <p style={s.secTitle}>{editing ? 'Edit Build' : 'Add Build'}</p>
       <p style={{ fontSize: 11, color: MUTED, marginBottom: 14 }}>
         A build is a specific configuration of this car, tagged with a Build Category.
-        Select photos from this model's gallery — the first selected photo is the featured image.
+        Select photos from this model&apos;s gallery — the first selected photo is the featured image.
       </p>
 
       <div style={s.card}>
@@ -158,7 +158,7 @@ export function ModelBuildsTab({ carId, adminSecret, onToast }: Props) {
         {/* Photo selector */}
         <div style={{ marginTop: 14 }}>
           <p style={s.label}>
-            Photos * — select from this model's gallery
+            Photos * — select from this model&apos;s gallery
             {form.photo_ids.length > 0 && <span style={{ color: G }}> ({form.photo_ids.length} selected — first is featured)</span>}
           </p>
           {photos.length === 0 ? (

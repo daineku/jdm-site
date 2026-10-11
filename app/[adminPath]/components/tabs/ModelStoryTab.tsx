@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { s, Field, ErrorBanner, api, MUTED, G } from '../ui'
+import { useState, useEffect } from 'react'
+import { s, Field, api, MUTED, G } from '../ui'
 
 type Props = {
   carId: string
@@ -24,7 +24,7 @@ export function ModelStoryTab({ carId, adminSecret, initialDescription, onToast 
         description: description.trim() || null,
       }, adminSecret)
       onToast('Story saved')
-    } catch (e: any) { onToast(e.message, 'error') }
+    } catch (e) { onToast(e instanceof Error ? e.message : String(e), 'error') }
     finally { setSaving(false) }
   }
 

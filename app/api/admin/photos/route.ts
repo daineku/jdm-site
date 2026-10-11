@@ -3,6 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
 import { deleteFromR2, getKeyFromUrl } from '@/lib/r2'
 
+type PhotoUpdateBody = { id?: string; [key: string]: unknown }
+type PhotoDeleteBody = { id?: string; url?: string; thumb_url?: string | null; original_url?: string | null }
+
 export async function GET(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = req.nextUrl
@@ -25,7 +28,7 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  let body: any
+  let body: PhotoUpdateBody
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { id, ...updates } = body
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
@@ -36,7 +39,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   if (!isAuthed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  let body: any
+  let body: PhotoDeleteBody
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { id, url, thumb_url, original_url } = body
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
