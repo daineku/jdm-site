@@ -9,7 +9,7 @@ import { getSiteSettings } from '@/lib/data'
 import { getHomepageArticles } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
 import { isDeliveryConfigured } from '@/lib/contactDelivery'
-import { getContactEmail, getSocialLinks } from '@/lib/social'
+import { getSocialLinks } from '@/lib/social'
 
 // Studio positioning is fixed here on purpose: the legacy JDM SEO defaults in
 // site_settings still apply to the archive pages, but never to the studio homepage.
@@ -41,8 +41,7 @@ export const metadata: Metadata = {
 export default async function Home() {
   const [settings, articles] = await Promise.all([getSiteSettings(), getHomepageArticles(3)])
   const socials = getSocialLinks(settings)
-  const email = getContactEmail()
-  const delivery = isDeliveryConfigured() ? 'server' : email ? 'mailto' : null
+  const deliveryReady = isDeliveryConfigured()
   const baseUrl = getBaseUrl()
 
   const jsonLd = {
@@ -53,7 +52,6 @@ export default async function Home() {
     logo: `${baseUrl}/images/brand/logo.png`,
     description: DESCRIPTION,
     knowsAbout: ['Real-time simulation', 'Vehicle dynamics', 'AI traffic simulation', 'Interactive 3D environments', 'Real-time lighting and rendering', 'Cinematic video production'],
-    ...(email ? { email } : {}),
     ...(socials.length ? { sameAs: socials.map(s => s.href) } : {}),
   }
 
@@ -67,7 +65,7 @@ export default async function Home() {
       <StudioServices />
       <SelectedWork />
       <JournalSection articles={articles} />
-      <StudioContact email={email} delivery={delivery} socials={socials} />
+      <StudioContact deliveryReady={deliveryReady} socials={socials} />
       <Reveal />
     </main>
   )
