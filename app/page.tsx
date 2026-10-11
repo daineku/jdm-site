@@ -3,7 +3,6 @@ import StudioHero from '@/components/studio/StudioHero'
 import StudioServices from '@/components/studio/StudioServices'
 import SelectedWork from '@/components/studio/SelectedWork'
 import JournalSection from '@/components/studio/JournalSection'
-import ProcessSection from '@/components/studio/ProcessSection'
 import StudioContact from '@/components/studio/StudioContact'
 import Reveal from '@/components/studio/Reveal'
 import { getSiteSettings } from '@/lib/data'
@@ -68,7 +67,6 @@ export default async function Home() {
       <StudioServices />
       <SelectedWork />
       <JournalSection articles={articles} />
-      <ProcessSection />
       <StudioContact email={email} delivery={delivery} socials={socials} />
       <Reveal />
     </main>
