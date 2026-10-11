@@ -7,7 +7,6 @@
 
 const GOLD = '#FCCC00'
 const IVORY = '#F4F5F0'
-const GREEN = '#0B5C37'
 
 /** Worlds 02 — vehicle path sampled through a perspective floor. viewBox 400×500. */
 export function SimulationDiagram() {
@@ -141,93 +140,6 @@ export function FramingGlyph() {
       <rect x="18" y="138" width="18" height="14" rx="2" fill="#050806" stroke={GOLD} />
       <circle cx="27" cy="145" r="3" fill={GOLD} />
       <path d="M 114 40 L 120 40 L 120 46 M 206 40 L 212 40 L 212 46 M 114 140 L 120 140 L 120 134 M 206 140 L 212 140 L 212 134" fill="none" stroke={GOLD} strokeWidth="1.4" />
-    </svg>
-  )
-}
-
-/** Research 01 — a district road graph with one traced route. viewBox 400×300. */
-export function RoadNetworkPanel() {
-  const blocks: [number, number, number, number][] = [
-    [18, 22, 64, 44], [96, 22, 52, 44], [162, 14, 70, 52], [246, 22, 58, 40], [318, 10, 70, 56],
-    [18, 82, 46, 58], [78, 82, 70, 40], [252, 76, 40, 58], [306, 82, 82, 40],
-    [18, 156, 70, 50], [102, 136, 46, 70], [300, 136, 88, 44],
-    [18, 222, 56, 60], [88, 222, 62, 34], [222, 200, 64, 46], [300, 194, 40, 52], [354, 194, 34, 88],
-    [88, 270, 60, 24], [222, 260, 118, 30],
-  ]
-  return (
-    <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <rect width="400" height="300" fill="#04140c" />
-      <g fill={IVORY} fillOpacity="0.035" stroke={IVORY} strokeOpacity="0.14">
-        {blocks.map(([x, y, w, h], i) => <rect key={i} x={x} y={y} width={w} height={h} />)}
-      </g>
-      <g fill="none" stroke={IVORY} strokeOpacity="0.35" strokeWidth="1">
-        <path d="M 160 -10 C 170 70, 186 150, 196 310" />
-        <path d="M -10 150 C 90 140, 260 132, 410 128" />
-      </g>
-      <path d="M -10 248 C 70 236, 130 196, 196 168 S 310 92, 410 70" fill="none" stroke={GREEN} strokeWidth="9" strokeOpacity="0.55" />
-      <path d="M -10 248 C 70 236, 130 196, 196 168 S 310 92, 410 70" fill="none" stroke={GOLD} strokeWidth="1.5" />
-      {[[196, 168], [189, 136], [93, 222], [318, 104]].map(([x, y], i) => (
-        <g key={i}>
-          <circle cx={x} cy={y} r="7" fill="none" stroke={GOLD} strokeOpacity="0.35" />
-          <circle cx={x} cy={y} r="2.6" fill={GOLD} />
-        </g>
-      ))}
-    </svg>
-  )
-}
-
-/** Research 02 — diffuse / metal / clearcoat response under one key light. viewBox 400×300. */
-export function MaterialStudyPanel() {
-  const spheres = [
-    { cx: 92, id: 'm-diffuse', base: ['#e9e7de', '#8c8b84', '#1d1f1c'], spec: 0.25, specR: 26 },
-    { cx: 200, id: 'm-metal', base: ['#cfd3d0', '#3a3f3c', '#0b0d0c'], spec: 0.95, specR: 8 },
-    { cx: 308, id: 'm-coat', base: ['#1d8a57', '#0b4a2c', '#03170d'], spec: 1, specR: 5 },
-  ]
-  return (
-    <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <linearGradient id="m-bg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#030806" />
-          <stop offset="0.62" stopColor="#0a1a12" />
-          <stop offset="0.62" stopColor="#0d2117" />
-          <stop offset="1" stopColor="#050c08" />
-        </linearGradient>
-        {spheres.map(s => (
-          <radialGradient key={s.id} id={s.id} cx="0.36" cy="0.32" r="0.75">
-            <stop offset="0" stopColor={s.base[0]} />
-            <stop offset="0.55" stopColor={s.base[1]} />
-            <stop offset="1" stopColor={s.base[2]} />
-          </radialGradient>
-        ))}
-        <radialGradient id="m-shadow" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#000" stopOpacity="0.75" />
-          <stop offset="1" stopColor="#000" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="m-env" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={IVORY} stopOpacity="0" />
-          <stop offset="0.5" stopColor={IVORY} stopOpacity="0.35" />
-          <stop offset="1" stopColor={IVORY} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <rect width="400" height="300" fill="url(#m-bg)" />
-      {spheres.map(s => (
-        <g key={s.id}>
-          <ellipse cx={s.cx} cy="216" rx="44" ry="8" fill="url(#m-shadow)" />
-          <circle cx={s.cx} cy="168" r="44" fill={`url(#${s.id})`} />
-          {s.id !== 'm-diffuse' && (
-            <path d={`M ${s.cx - 42} 178 Q ${s.cx} 190 ${s.cx + 42} 178 L ${s.cx + 40} 186 Q ${s.cx} 197 ${s.cx - 40} 186 Z`} fill="url(#m-env)" />
-          )}
-          <circle cx={s.cx - 15} cy="150" r={s.specR} fill="#fff" fillOpacity={s.spec * 0.85} />
-          <path d={`M ${s.cx + 28} 140 A 44 44 0 0 1 ${s.cx + 40} 186`} fill="none" stroke={GOLD} strokeOpacity={s.id === 'm-diffuse' ? 0.15 : 0.45} strokeWidth="1.2" />
-        </g>
-      ))}
-      <g fontFamily="var(--font-display), sans-serif" fontSize="9" letterSpacing="2" fill={IVORY} fillOpacity="0.6" textAnchor="middle">
-        <text x="92" y="250">DIFFUSE</text>
-        <text x="200" y="250">METAL</text>
-        <text x="308" y="250">CLEARCOAT</text>
-      </g>
-      <circle cx="40" cy="40" r="3" fill={GOLD} />
-      <line x1="46" y1="46" x2="70" y2="70" stroke={GOLD} strokeOpacity="0.5" strokeDasharray="3 4" />
     </svg>
   )
 }

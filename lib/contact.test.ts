@@ -4,12 +4,12 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { enquirySubject, enquiryText, isEmail, validateEnquiry } from './contact.ts'
+import { PROJECT_TYPE_VALUES, enquirySubject, enquiryText, isEmail, validateEnquiry } from './contact.ts'
 
 const valid = {
   name: 'Ada Lovelace',
   email: 'ada@example.org',
-  projectType: 'Simulation',
+  projectType: 'Simulation & Interactive Development',
   timeline: '',
   message: 'A driving simulation prototype for a trade show stand.',
 }
@@ -34,7 +34,7 @@ test('reports every missing required field', () => {
 
 test('rejects project types outside the fixed list', () => {
   assert.ok(validateEnquiry({ ...valid, projectType: 'Hacking' }).errors.projectType)
-  for (const t of ['Simulation', 'Spatial Design', 'Cinematic & Video', 'Other']) {
+  for (const t of PROJECT_TYPE_VALUES) {
     assert.ok(validateEnquiry({ ...valid, projectType: t }).value, t)
   }
 })
@@ -56,8 +56,8 @@ test('email check', () => {
 })
 
 test('subject carries the category; body carries every field', () => {
-  const v = validateEnquiry({ ...valid, projectType: 'Cinematic & Video', timeline: 'Summer' }).value!
-  assert.equal(enquirySubject(v), 'Project enquiry — Cinematic & Video — Ada Lovelace')
+  const v = validateEnquiry({ ...valid, projectType: 'Cinematic & Video Production', timeline: 'Summer' }).value!
+  assert.equal(enquirySubject(v), 'Project enquiry — Cinematic & Video Production — Ada Lovelace')
   const text = enquiryText(v)
-  for (const s of ['Ada Lovelace', 'ada@example.org', 'Cinematic & Video', 'Summer', valid.message]) assert.ok(text.includes(s), s)
+  for (const s of ['Ada Lovelace', 'ada@example.org', 'Cinematic & Video Production', 'Summer', valid.message]) assert.ok(text.includes(s), s)
 })

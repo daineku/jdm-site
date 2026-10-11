@@ -410,6 +410,10 @@
   transition: transform 1.2s var(--st-ease);
   will-change: transform;
 }
+.st-cover__img { object-fit: cover; object-position: var(--st-pos, center); user-select: none; }
+@media (max-width: 899px) {
+  .st-cover__img { object-position: var(--st-pos-m, var(--st-pos, center)); }
+}
 .st-hover:hover .st-crop__zoom,
 .st-hover:focus-within .st-crop__zoom { transform: scale(1.035); }
 
@@ -595,7 +599,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   02 — What We Make
+   02 — What We Build (services)
    -------------------------------------------------------------------------- */
 
 .st-worlds__grid {
@@ -609,6 +613,28 @@
 .st-worlds__media { aspect-ratio: 4 / 5; border: 1px solid var(--st-border); }
 .st-worlds__text { display: grid; gap: 12px; padding-right: 8%; }
 .st-worlds__text .st-h3 { display: flex; align-items: baseline; gap: 14px; }
+.st-deliverables {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--st-border);
+}
+.st-deliverables li {
+  position: relative;
+  padding: 9px 0 9px 20px;
+  border-bottom: 1px solid var(--st-border);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--st-text);
+}
+.st-deliverables li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: calc(9px + 0.62em);
+  width: 8px; height: 1px;
+  background: var(--st-gold);
+}
+.st-need { margin: 4px 0 0; font-size: 0.9rem; line-height: 1.6; font-style: italic; color: var(--st-text-3); }
 
 @media (max-width: 899px) {
   .st-worlds__grid { grid-template-columns: 1fr; gap: 56px; }
@@ -621,7 +647,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   03 — Designed to Be Experienced
+   03 — Why Daineku
    -------------------------------------------------------------------------- */
 
 .st-design { background: linear-gradient(180deg, var(--st-bg) 0%, var(--st-surface) 100%); }
@@ -650,6 +676,8 @@
 }
 .st-design__visual svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .st-design__copy { display: grid; gap: 12px; align-content: center; }
+.st-evidence { margin: 2px 0 0; font-size: 0.86rem; line-height: 1.6; color: var(--st-text); }
+.st-evidence .st-label { margin-right: 10px; color: var(--st-green-text); }
 
 @media (max-width: 899px) {
   .st-design__layout { grid-template-columns: 1fr; }
@@ -706,74 +734,15 @@
 .st-facts dt { font-family: var(--st-font-display); font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--st-green-text); }
 .st-facts dd { margin: 0; font-size: 0.92rem; color: var(--st-text); }
 
-.st-research {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(16px, 2vw, 28px);
-  margin-top: clamp(56px, 7vw, 104px);
-}
-.st-research__panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(4, 20, 12, 0.5);
-}
-.st-research__visual { position: relative; min-height: 260px; border-right: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden; }
-.st-research__visual svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.st-research__copy { display: grid; gap: 14px; align-content: end; padding: clamp(24px, 2.6vw, 36px); }
-.st-research__copy .st-body { color: #a9b6ae; }
-
-@media (max-width: 1099px) {
-  .st-research { grid-template-columns: 1fr; }
-}
 @media (max-width: 899px) {
   .st-case { grid-template-columns: 1fr; }
 }
 @media (max-width: 599px) {
-  .st-research__panel { grid-template-columns: 1fr; }
-  .st-research__visual { min-height: 0; aspect-ratio: 16 / 10; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
   .st-facts div { grid-template-columns: 92px 1fr; }
 }
 
 /* --------------------------------------------------------------------------
-   05 — Expertise (ivory band, Genjitsu's ruled services list)
-   -------------------------------------------------------------------------- */
-
-.st-expertise__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: clamp(32px, 5vw, 80px);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.st-skill {
-  position: relative;
-  display: grid;
-  grid-template-columns: clamp(72px, 7vw, 104px) minmax(0, 1fr);
-  gap: clamp(16px, 2vw, 28px);
-  padding: clamp(28px, 3vw, 40px) 0 clamp(36px, 3.6vw, 52px);
-  border-top: 1px solid var(--st-border-ink);
-}
-.st-skill::before {
-  content: '';
-  position: absolute;
-  top: -1px; left: 0;
-  width: 40px; height: 2px;
-  background: var(--st-green);
-  transition: width 0.7s var(--st-ease);
-}
-.st-skill:hover::before { width: 100%; }
-.st-skill__num { font-size: clamp(2.6rem, 4vw, 3.6rem); --st-stroke: var(--st-green); }
-.st-skill__copy { display: grid; gap: 12px; align-content: start; padding-top: 4px; }
-.st-skill__copy .st-h3 { color: var(--st-ink); }
-
-@media (max-width: 799px) {
-  .st-expertise__grid { grid-template-columns: 1fr; }
-}
-
-/* --------------------------------------------------------------------------
-   06 — Inside the Work
+   05 — Technical Production
    -------------------------------------------------------------------------- */
 
 .st-band {
@@ -865,7 +834,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   07 — Process (ivory band; Genjitsu's staggered consultancy cards)
+   08 — Process (ivory band; Genjitsu's staggered consultancy cards)
    -------------------------------------------------------------------------- */
 
 .st-process__layout {
@@ -924,7 +893,77 @@
 }
 
 /* --------------------------------------------------------------------------
-   08 — Studio
+   06 — Journal (homepage cards + /journal; same frame language as the case study)
+   -------------------------------------------------------------------------- */
+
+.st-journal__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 28px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.st-journal__card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--st-border);
+  background: var(--st-surface);
+}
+.st-journal__media { aspect-ratio: 16 / 10; border-bottom: 1px solid var(--st-border); }
+.st-journal__media--empty { background: linear-gradient(135deg, var(--st-green-deep), var(--st-bg-deep)); }
+.st-journal__copy { display: grid; gap: 12px; align-content: start; padding: clamp(20px, 2.2vw, 30px); }
+.st-journal__meta { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+.st-journal__meta time { font-size: 0.78rem; letter-spacing: 0.06em; color: var(--st-text-3); }
+.st-journal__title a { color: inherit; text-decoration: none; }
+/* The whole card is the link target; the title link carries the accessible name. */
+.st-journal__title a::after { content: ''; position: absolute; inset: 0; z-index: 3; }
+.st-journal__title a:focus-visible { outline: none; }
+.st-journal__card:focus-within { outline: 2px solid var(--st-gold); outline-offset: 3px; }
+.st-journal__card:hover .st-journal__title { color: var(--st-gold); }
+.st-journal__more { margin-top: clamp(32px, 4vw, 56px); display: flex; justify-content: center; }
+.st-journal__empty { text-align: center; color: var(--st-text-2); }
+
+@media (max-width: 1099px) {
+  .st-journal__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 699px) {
+  .st-journal__grid { grid-template-columns: 1fr; }
+}
+
+/* Article page */
+.st-article { padding-top: calc(var(--st-hdr) + clamp(40px, 6vw, 88px)); }
+.st-article--preview { padding-top: 40px; }
+.st-article__head { max-width: 860px; margin: 0 auto; display: grid; gap: 20px; text-align: center; justify-items: center; }
+.st-article__cover { max-width: 1120px; margin: clamp(36px, 5vw, 64px) auto 0; aspect-ratio: 16 / 9; border: 1px solid var(--st-border); }
+.st-prose { max-width: 720px; margin: clamp(36px, 5vw, 64px) auto 0; color: var(--st-text-2); font-size: 1.04rem; line-height: 1.8; }
+.st-prose > * + * { margin-top: 1.1em; }
+.st-prose h2, .st-prose h3 { font-family: var(--st-font-display); color: var(--st-text); line-height: 1.25; margin-top: 1.9em; }
+.st-prose h2 { font-size: clamp(1.4rem, 2vw, 1.75rem); }
+.st-prose h3 { font-size: 1.2rem; }
+.st-prose strong { color: var(--st-text); }
+.st-prose a { color: var(--st-gold); text-decoration: underline; text-underline-offset: 3px; }
+.st-prose ul, .st-prose ol { padding-left: 1.3em; }
+.st-prose ul { list-style: disc; }
+.st-prose ol { list-style: decimal; }
+.st-prose li::marker { color: var(--st-gold); }
+.st-prose li + li { margin-top: 0.4em; }
+.st-prose blockquote { margin-left: 0; padding-left: 20px; border-left: 2px solid var(--st-gold); color: var(--st-text); }
+.st-prose code { font-size: 0.9em; background: var(--st-surface-2); padding: 0.1em 0.35em; }
+.st-prose pre { overflow-x: auto; background: var(--st-bg-deep); border: 1px solid var(--st-border); padding: 16px; }
+.st-prose pre code { background: none; padding: 0; }
+.st-prose img { display: block; max-width: 100%; height: auto; border: 1px solid var(--st-border); }
+.st-prose hr { border: 0; border-top: 1px solid var(--st-border); }
+.st-article__back { max-width: 720px; margin: clamp(40px, 5vw, 72px) auto 0; }
+.st-preview-banner {
+  position: sticky; top: var(--st-hdr); z-index: 20;
+  background: var(--st-gold); color: var(--st-ink);
+  text-align: center; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; padding: 8px 16px;
+}
+
+/* --------------------------------------------------------------------------
+   07 — Studio
    -------------------------------------------------------------------------- */
 
 .st-about__layout {

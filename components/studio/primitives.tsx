@@ -51,6 +51,39 @@ export function Crop({
   )
 }
 
+/**
+ * A whole image covering its frame, framed by object-position alone (the source is never
+ * re-cut). Used for project artwork whose owner has fixed its composition. Desktop and
+ * mobile framing are separate because the frame changes width, not just size, below 900px.
+ */
+export function Cover({
+  src,
+  alt,
+  position,
+  mobilePosition = position,
+  sizes,
+  className = '',
+  children,
+}: {
+  src: StaticImageData
+  alt: string
+  position: string
+  mobilePosition?: string
+  sizes: string
+  className?: string
+  children?: ReactNode
+}) {
+  const style = { '--st-pos': position, '--st-pos-m': mobilePosition } as CSSProperties
+  return (
+    <div className={`st-crop ${className}`} style={style}>
+      <div className="st-crop__zoom">
+        <Image src={src} alt={alt} fill sizes={sizes} className="st-cover__img" draggable={false} />
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export function SectionHeading({
   title,
   lead,

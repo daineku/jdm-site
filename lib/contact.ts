@@ -3,7 +3,12 @@
  * POST /api/contact (the authority). Pure — safe to import on client and server.
  */
 
-export const PROJECT_TYPE_VALUES = ['Simulation', 'Spatial Design', 'Cinematic & Video', 'Other'] as const
+export const PROJECT_TYPE_VALUES = [
+  'Simulation & Interactive Development',
+  'Digital Environment / Spatial Design',
+  'Cinematic & Video Production',
+  'Other',
+] as const
 export type ProjectType = (typeof PROJECT_TYPE_VALUES)[number]
 
 export type EnquiryFields = {

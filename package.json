@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:description": "node lib/renderDescription.test.ts",
     "test:contact": "node --test lib/contact.test.ts",
+    "test:journal": "node --test lib/journal.test.ts",
     "test:smoke": "playwright test"
   },
   "dependencies": {
@@ -25,6 +26,8 @@
     "next-themes": "^0.4.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
     "zod": "^4.3.6"
   },

@@ -902,7 +902,8 @@ Completion gate:
 
 | Route | What |
 |---|---|
-| `/` | Studio site. Server components in `components/studio/`. No Supabase content except social links. |
+| `/` | Studio site. Server components in `components/studio/`. Supabase content: social links and up to three Journal articles. |
+| `/journal`, `/journal/<slug>` | Studio Journal (table `studio_articles`, edited in the admin → **Journal**). Read per request. |
 | `/archive` | The JDM feed (was `/`). `MasonryGallery` + `PhotoGrid`, unchanged batching/ordering. Brand chips → `/archive?brand=<slug>`. |
 | `/?brand=<slug>` | 307 → `/archive?brand=<slug>` (`next.config.ts` redirects, query preserved). Bare `/` is unaffected. |
 
@@ -912,14 +913,17 @@ Admin → **Archive Feed** (was "Homepage") curates `/archive`. Data model uncha
 
 - `components/studio/content.ts` — all homepage copy. No invented clients, metrics or awards; The Kanjo is an own project *in development*.
 - `components/studio/studio.css` — design system, every rule scoped under `.studio` / `st-*`. The `.studio a` reset uses `:where()` (zero specificity) so it beats the legacy global `a { color: #39FF14 }` by source order without overriding component classes.
-- `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `SectionHeading`, `SectionDivider`, `delay()`.
-- `components/studio/visuals.tsx` — vector panels (simulation path, light, material studies, road graph). Decorative; replace with real captures later.
+- `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `Cover` (whole image, framed by object-position only, separate desktop/mobile positions), `SectionHeading`, `SectionDivider`, `delay()`.
+- `components/studio/visuals.tsx` — vector glyphs (simulation path, massing, input states, camera framing). Decorative.
+- Homepage order (`app/page.tsx`): Hero → `StudioServices` (What We Build) → `WhyDaineku` → `SelectedWork` (The Kanjo) → `TechnicalProduction` → `JournalSection` (hidden with no published article) → `StudioAbout` → `ProcessSection` → `StudioContact`.
 - `components/studio/Reveal.tsx` — one IntersectionObserver for `[data-reveal]`. Content is visible in server HTML; the hidden state is armed only after mount and never under `prefers-reduced-motion`.
 
 ### Brand assets — `public/images/brand/`
 
 `logo.png`, `title.png`, `hero.png`, `divider.png` are the originals (moved from `components/`). `logo-mark.png`, `title-wordmark.png`, `divider-line.png` are the same pixels with transparent padding trimmed. `og.jpg` is a 1200×630 crop of `hero.png`.
-The divider's green line is low-contrast on near-black — it is placed on the ivory bands (Expertise, Process) and once in the footer.
+The divider's green line is low-contrast on near-black — it is placed on the ivory band (Process) and once in the footer.
+
+`public/images/projects/thekanjo-hero.webp` is **The Kanjo's own hero artwork**, not a DAINEKU brand image: source `daineku/kanjo` → `public/media/hero/hero.png` (6336×2688 PNG, 18.2 MB, sha256 `006fc676…0499378`), resized with Sharp to 2560×1086 WebP q80 (190 KB); next/image serves sized variants from it. Framing is object-position only (`70% 58%` desktop, `72% 50%` mobile — the source's own phone framing); the red car sits at x 47–88 % of the frame. To refresh it, regenerate from the Kanjo repository's file — never hotlink GitHub.
 
 ### Fonts
 
@@ -930,13 +934,19 @@ No font is fetched from Google — at build time or runtime.
 - **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build.
 - `@font-face` must stay *after* `@import "tailwindcss"` (CSS `@import` must precede all other rules).
 
-### Positioning & copy (v10.1)
+### Positioning & copy (v10.2)
 
-All homepage copy lives in `components/studio/content.ts`; each section has one job (see the header comment there). Three commercial pillars — Real-Time Simulation, Spatial Design, Cinematic & Video Production — appear once, in **What We Make**. The Kanjo links to its verified site `https://www.thekanjo.com/` (`KANJO_URL`; the site states "Published by Daineku"). British English throughout.
+All homepage copy lives in `components/studio/content.ts`; each section has one job (see the header comment there). British English throughout.
+
+- **What We Build** — three commissions (Interactive Simulation & Prototyping · Digital Environments & Spatial Visualisation · Cinematic & Video Production), each with four concrete deliverables and one typical brief.
+- **Why Daineku** — "Built to Work. Designed to Feel Real.": three differentiators; the first two carry an *Evidence* line from The Kanjo, the third is stated as an approach (no evidence line, on purpose).
+- **Selected Work** — The Kanjo, with its real artwork. The **only** link to `https://www.thekanjo.com/` on the page (`KANJO_URL`, "Explore The Kanjo ↗"). Facts: original IP, in development, Unity 6.
+- **Technical Production** — four systems the game demonstrates. No CTA (it used to repeat the Kanjo link).
+- Every technical statement about The Kanjo was checked against the game project before publication. Do not add performance figures, platforms, controller support, clients or a showreel without new evidence.
 
 ### Contact — project enquiries
 
-Form fields: name, email, project type (Simulation / Spatial Design / Cinematic & Video / Other), optional timeline, project description. Validation is shared (`lib/contact.ts`) by the form and the server.
+Form fields: name, email, project type (Simulation & Interactive Development / Digital Environment / Spatial Design / Cinematic & Video Production / Other — `PROJECT_TYPE_VALUES` in `lib/contact.ts`), optional timeline, project description. Validation is shared (`lib/contact.ts`) by the form and the server.
 
 **Delivery modes** (decided on the server per request, `app/page.tsx`):
 
@@ -956,6 +966,26 @@ Env (all server-side, read at request time — no rebuild needed, but Vercel app
 
 Endpoint guards (`app/api/contact/route.ts`): JSON only, 16 KB cap, same-origin `Origin`, honeypot field `website` (silently accepted, never forwarded), minimum fill time 2.5 s measured by the form, 5 submissions / 10 min per client IP (**in-memory, per serverless instance** — a burst limiter, not a global quota), server-side validation with control-character rejection in single-line fields. The recipient is fixed by configuration; anything the browser sends as a recipient is ignored. Reply-To = the visitor's validated address; subject `Project enquiry — <type> — <name>`. Nothing is stored; logs carry only the HTTP status.
 
+### Journal — studio articles
+
+**Data:** one additive table, `studio_articles` (`supabase/migration_v10a_studio_articles.sql`): slug (unique, format-checked), title, excerpt, body (Markdown), category (free text), cover_image_url + cover_alt, is_published, is_featured, sort_order, published_at, created/updated_at (trigger). No legacy table is touched.
+
+- **Access:** RLS on from creation. `anon`/`authenticated` get `SELECT` only, and the policy limits it to `is_published and published_at <= now()`. All writes go through the admin API with the service-role key (server only).
+- **Applying it:** run `supabase/audit/security_audit.sql` first and keep the output as the snapshot; then run the migration in the SQL editor. It is re-runnable (every statement is guarded). Rollback (only if nothing must be kept): `drop table public.studio_articles; drop function public.studio_articles_touch();`.
+- **Before the table exists** every Journal read returns empty (one warning in the logs): the homepage section is hidden and `/journal` says "No articles have been published yet." Nothing else is affected.
+
+**Admin → Journal** (`app/[adminPath]/components/JournalTab.tsx`, API `app/api/admin/journal/*`, same `x-admin-secret` auth): create, edit, save draft, publish / unpublish (confirmed), slug suggested from the title (`slugify`, validated by `articleSlug`), category with suggestions, excerpt and body with counters, cover upload to R2 (`upload-asset`, folder `journal/`) or pick from previously uploaded Journal images (`/api/admin/journal/media`, R2 list), required alt text for covers, featured toggle and featured order (↑/↓ → `/api/admin/journal/order`), delete with confirmation, and **Preview** rendered with the public components before publishing.
+
+**Validation** (`lib/validation/journal.ts`, strict Zod — unknown fields rejected): limits mirror the table constraints; covers must live on `R2_PUBLIC_URL`; publishing needs an excerpt and a body; a cover needs alt text. First publication stamps `published_at`; unpublishing keeps it.
+
+**Rendering:** `components/studio/ArticleBody.tsx` — `react-markdown` + `remark-gfm`, `skipHtml` (raw HTML is dropped, so no `<script>`/`<iframe>`), default URL transform (no `javascript:`), images HTTPS-only, body headings start at h2. Public pages and the sitemap are `force-dynamic`, so a save is live immediately — no deploy and no revalidation step. The homepage shows up to three: featured first (in admin order), then newest.
+
+Client components import Journal types and helpers from `lib/journalShared.ts`, never `lib/journal.ts` — the latter imports the Supabase client and must stay out of browser bundles.
+
+### Database access (legacy tables)
+
+The legacy archive tables pre-date this work and run with RLS disabled (see `migration_v4_fix_rls.sql`). Their access configuration was reviewed in October 2026; the findings and a tested, reversible remediation were handed to the owner privately, not in this public repository. The site performs every write with the service-role key, so restricting the public API roles does not affect the admin. `supabase/audit/security_audit.sql` (read-only) shows the current grants and policies.
+
 ### Loader
 
 `SpeedometerLoader` is deleted. `MasonryGallery` renders as soon as the first batch arrives (the fake progress interval and 250 ms delay are gone); first load shows a static skeleton; the infinite-scroll sentinel is an empty 96 px div. `fetchedCountRef` / `isFetchingRef` untouched.
@@ -972,13 +1002,14 @@ Endpoint guards (`app/api/contact/route.ts`): JSON only, 16 KB cap, same-origin 
 | `npm run lint` | 0 errors (4 accepted warnings: 3 admin `<img>`, 1 deliberate `exhaustive-deps` in MasonryGallery — "fixing" it changes fetch behaviour) |
 | `npm run test:description` | 13 passed |
 | `npm run test:contact` | 8 passed — enquiry validation (`lib/contact.test.ts`, Node test runner) |
+| `npm run test:journal` | 6 passed — article validation and slugs (`lib/journal.test.ts`) |
 | `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
-| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390) |
+| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 59 passed, 11 skipped by design |
 
 - `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
 - Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.
 - supabase-js has no generated DB types here, so it infers every embedded relation as an array. Many-to-one FK embeds are single objects at runtime — declare the row shape with `.overrideTypes<Row[], { merge: false }>()` (see `getModelBuildInstances`).
-- Smoke tests start `next start` with a random throwaway `ADMIN_SECRET_PATH` and mock `/api/photos`; they need no Supabase/R2 credentials. Contact delivery runs end to end against a local mock provider (`tests/mock-resend.mjs`) with a reserved `.invalid` inbox — it proves the app's delivery code, **not** real Resend delivery. First run: `npx playwright install chromium`.
+- Smoke tests start `next start` with a random throwaway `ADMIN_SECRET_PATH` and mock `/api/photos`; they need no Supabase/R2 credentials. `tests/mock-backend.mjs` stands in for Supabase (the `studio_articles` subset of PostgREST, emulating the RLS rule: anon sees published rows only and cannot write) and for R2 (put, list, public URLs). The app is pointed at it with the test-only `SUPABASE_URL_OVERRIDE` and `R2_ENDPOINT` — **never set those in Vercel**. Admin tests send their own `x-forwarded-for` because the admin API rate-limits to 60 requests/min per IP. The archive pagination test asserts batch sizes through the request sequence, not through an intermediate card count: on short viewports the sentinel is visible as soon as the first batch renders, so the second batch can arrive before a snapshot sees exactly 11 cards (this was the source of an old intermittent failure). Contact delivery runs end to end against a local mock provider (`tests/mock-resend.mjs`) with a reserved `.invalid` inbox — it proves the app's delivery code, **not** real Resend delivery. First run: `npx playwright install chromium`.
 
 ### Known pre-existing issue (not changed)
 

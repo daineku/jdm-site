@@ -1,27 +1,27 @@
-import hero from '@/public/images/brand/hero.png'
+import kanjoHero from '@/public/images/projects/thekanjo-hero.webp'
 import { KANJO_URL, WORK } from './content'
-import { Arrow, Crop, SectionHeading, delay } from './primitives'
-import { MaterialStudyPanel, RoadNetworkPanel } from './visuals'
+import { Arrow, Cover, SectionHeading } from './primitives'
 
-// Wide 16:11 region: river skyline, the half-built wireframe block and the curving road —
-// deliberately without the car, which the hero already shows.
-const KANJO = { x: 0, y: 150, w: 1100, h: 756 }
-
-const PANELS = [RoadNetworkPanel, MaterialStudyPanel]
+// The Kanjo's own approved hero (daineku/kanjo public/media/hero/hero.png, 6336×2688), resized to
+// 2560px WebP. The red car sits at x 47–88% of the frame; the 16:11 frame shows ~62% of the width,
+// so both framings are pulled right of centre. 72% 50% is the source's own phone framing; the
+// desktop keeps the source's vertical 58% so the road carries the bottom of the frame.
+const POSITION = '70% 58%'
+const MOBILE_POSITION = '72% 50%'
 
 export default function SelectedWork() {
-  const { kanjo, research } = WORK
+  const { kanjo } = WORK
   return (
     <section id="work" className="st-section st-work" aria-labelledby="work-title">
       <div className="st-container">
         <SectionHeading id="work-title" title={WORK.title} lead={WORK.subtitle} className="st-section-head" />
 
         <article className="st-case st-hover" aria-labelledby="kanjo-title">
-          <Crop src={hero} region={KANJO} className="st-case__media st-ticks" frameVw={56} frameMaxPx={740}
-            alt="The Kanjo: a river skyline at dusk, a building shown half as wireframe, and a wet elevated road curving through the city.">
+          <Cover src={kanjoHero} alt={kanjo.image.alt} position={POSITION} mobilePosition={MOBILE_POSITION}
+            className="st-case__media st-ticks" sizes="(max-width: 899px) 100vw, min(56vw, 740px)">
             <span className="st-frame-tag st-frame-tag--tl">The Kanjo</span>
-            <span className="st-frame-tag st-frame-tag--br">Work in progress</span>
-          </Crop>
+            <span className="st-frame-tag st-frame-tag--br">In development</span>
+          </Cover>
 
           <div className="st-case__copy" data-reveal="">
             <p className="st-label" style={{ margin: 0 }}>{kanjo.category}</p>
@@ -38,22 +38,6 @@ export default function SelectedWork() {
             </a>
           </div>
         </article>
-
-        <div className="st-research">
-          {research.map((r, i) => {
-            const Panel = PANELS[i]
-            return (
-              <article key={r.title} className="st-research__panel" data-reveal="" style={delay(i * 120)}>
-                <div className="st-research__visual"><Panel /></div>
-                <div className="st-research__copy">
-                  <p className="st-label" style={{ margin: 0 }}>{r.label}</p>
-                  <h3 className="st-h3">{r.title}</h3>
-                  <p className="st-body">{r.body}</p>
-                </div>
-              </article>
-            )
-          })}
-        </div>
       </div>
     </section>
   )

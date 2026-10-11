@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import StudioHero from '@/components/studio/StudioHero'
-import RealTimeWorlds from '@/components/studio/RealTimeWorlds'
-import DesignExperience from '@/components/studio/DesignExperience'
+import StudioServices from '@/components/studio/StudioServices'
+import WhyDaineku from '@/components/studio/WhyDaineku'
 import SelectedWork from '@/components/studio/SelectedWork'
-import ExpertiseGrid from '@/components/studio/ExpertiseGrid'
-import BehindSimulation from '@/components/studio/BehindSimulation'
-import ProcessSection from '@/components/studio/ProcessSection'
+import TechnicalProduction from '@/components/studio/TechnicalProduction'
+import JournalSection from '@/components/studio/JournalSection'
 import StudioAbout from '@/components/studio/StudioAbout'
+import ProcessSection from '@/components/studio/ProcessSection'
 import StudioContact from '@/components/studio/StudioContact'
 import Reveal from '@/components/studio/Reveal'
 import { getSiteSettings } from '@/lib/data'
+import { getHomepageArticles } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
 import { isDeliveryConfigured } from '@/lib/contactDelivery'
 import { getContactEmail, getSocialLinks } from '@/lib/social'
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
-  const settings = await getSiteSettings()
+  const [settings, articles] = await Promise.all([getSiteSettings(), getHomepageArticles(3)])
   const socials = getSocialLinks(settings)
   const email = getContactEmail()
   const delivery = isDeliveryConfigured() ? 'server' : email ? 'mailto' : null
@@ -55,7 +56,7 @@ export default async function Home() {
     url: `${baseUrl}/`,
     logo: `${baseUrl}/images/brand/logo.png`,
     description: DESCRIPTION,
-    knowsAbout: ['Real-time simulation', 'Spatial design', 'Digital environments', 'Cinematic and video production'],
+    knowsAbout: ['Real-time simulation', 'Interactive prototyping', 'Digital environments', 'Spatial visualisation', 'Cinematic and video production'],
     ...(email ? { email } : {}),
     ...(socials.length ? { sameAs: socials.map(s => s.href) } : {}),
   }
@@ -67,13 +68,13 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <StudioHero />
-      <RealTimeWorlds />
-      <DesignExperience />
+      <StudioServices />
+      <WhyDaineku />
       <SelectedWork />
-      <ExpertiseGrid />
-      <BehindSimulation />
-      <ProcessSection />
+      <TechnicalProduction />
+      <JournalSection articles={articles} />
       <StudioAbout />
+      <ProcessSection />
       <StudioContact email={email} delivery={delivery} socials={socials} />
       <Reveal />
     </main>

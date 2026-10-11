@@ -1,6 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
-const STUDIO_SECTIONS = ['work', 'expertise', 'process', 'studio', 'contact']
+const STUDIO_SECTIONS = ['services', 'why', 'work', 'technical', 'studio', 'process', 'contact']
+
+/**
+ * The admin API rate-limits per client IP (lib/adminAuth.ts, 60/min). Locally every request
+ * comes from one address, so each admin test identifies as its own client.
+ */
+let ipSeq = 0
+const clientIp = () => `203.0.113.${(process.pid + ipSeq++ * 7 + Math.floor(Math.random() * 50)) % 250 + 1}`
+const adminHeaders = (ip = clientIp()) => ({ 'x-admin-secret': process.env.SMOKE_ADMIN_PATH!, 'x-forwarded-for': ip })
 
 /** Scroll the whole page so lazy images and reveals are triggered, then return to top. */
 async function scrollThrough(page: Page) {
@@ -59,35 +67,72 @@ test.describe('studio homepage', () => {
 })
 
 test.describe('studio content', () => {
-  test('What We Make presents exactly the three service pillars', async ({ page }) => {
+  test('What We Build lists the three commissions, each with concrete deliverables', async ({ page }) => {
     await page.goto('/')
-    const section = page.locator('section[aria-labelledby="worlds-title"]')
-    await expect(section.getByRole('heading', { level: 2 })).toHaveText('What We Make')
+    const section = page.locator('section#services')
+    await expect(section.getByRole('heading', { level: 2 })).toHaveText('What We Build')
     await expect(section.locator('h3')).toHaveText([
-      /Interactive Simulations/, /Digital Environments/, /Cinematic & Video Production/,
+      /Interactive Simulation & Prototyping/, /Digital Environments & Spatial Visualisation/, /Cinematic & Video Production/,
     ])
+    for (const card of await section.locator('.st-worlds__card').all()) {
+      await expect(card.locator('.st-deliverables li')).toHaveCount(4)
+      await expect(card.locator('.st-need')).toBeVisible()
+    }
   })
 
-  test('section headings follow the approved structure', async ({ page }) => {
+  test('section headings follow the agreed structure, in order', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('h2')).toContainText([
-      'What We Make', 'Designed as One Experience.', 'Selected Work', 'Production Capabilities',
-      'One World. Many Systems.', 'From Idea to Delivery.', 'Independent by Design.', "Let's Build Something.",
+      'What We Build', 'Built to Work. Designed to Feel Real.', 'Selected Work', 'What The Kanjo Demonstrates.',
+      'Independent by Design.', 'From Idea to Delivery.', "Let's Build Something.",
     ])
-    await expect(page.locator('#expertise li')).toHaveCount(6)
+    await expect(page.locator('#why .st-design__row')).toHaveCount(3)
+    await expect(page.locator('#technical .st-components > li')).toHaveCount(4)
     await expect(page.locator('#process ol > li')).toHaveCount(4)
+    // Retired sections must not come back.
+    for (const gone of ['Production Capabilities', 'One World. Many Systems.', 'Designed as One Experience.', 'A City Built to Move.']) {
+      await expect(page.getByRole('heading', { name: gone })).toHaveCount(0)
+    }
   })
 
-  test('The Kanjo is presented as original IP in development, linking to its verified site', async ({ page }) => {
+  test('The Kanjo case study shows the real project artwork, not a crop of the studio key visual', async ({ page }) => {
     await page.goto('/')
     const work = page.locator('#work')
-    await expect(work.getByRole('heading', { name: 'A City Built to Move.' })).toBeVisible()
+    await expect(work.getByRole('heading', { name: 'A Night Expressway, Built to Drive.' })).toBeVisible()
     await expect(work).toContainText('Original IP')
     await expect(work).toContainText('In development')
-    const cta = work.getByRole('link', { name: /view the kanjo/i })
+    await expect(work).toContainText('Unity 6')
+    const img = work.locator('img')
+    await expect(img).toHaveCount(1)
+    await expect(img).toHaveAttribute('alt', /red hatchback.*expressway at night/i)
+    await img.scrollIntoViewIfNeeded()
+    await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true)
+    expect(await img.evaluate((i: HTMLImageElement) => i.currentSrc)).toMatch(/thekanjo-hero/)
+    expect(await img.evaluate((i: HTMLImageElement) => i.currentSrc)).not.toMatch(/brand%2Fhero|brand\/hero/)
+    // The car must stay in frame: object-fit cover, positioned right of centre.
+    expect(await img.evaluate(i => getComputedStyle(i).objectFit)).toBe('cover')
+    expect(await img.evaluate(i => getComputedStyle(i).objectPosition)).toMatch(/^7\d% /)
+  })
+
+  test('The Kanjo is linked exactly once, from the case study, as an external CTA', async ({ page }) => {
+    await page.goto('/')
+    const links = page.locator('a[href*="thekanjo.com"]')
+    await expect(links).toHaveCount(1)
+    const cta = page.locator('#work').getByRole('link', { name: /explore the kanjo/i })
     await expect(cta).toHaveAttribute('href', 'https://www.thekanjo.com/')
     await expect(cta).toHaveAttribute('target', '_blank')
     await expect(cta).toHaveAttribute('rel', /noopener/)
+    await expect(page.locator('#technical a')).toHaveCount(0)
+  })
+
+  test('Why Daineku ties its differentiators to evidence from The Kanjo', async ({ page }) => {
+    await page.goto('/')
+    const why = page.locator('#why')
+    await expect(why.locator('h3')).toHaveText([
+      'Functional Worlds, Not Just Rendered Scenes', 'Prototype and Validate in Real Time', 'One Environment, Multiple Outputs',
+    ])
+    await expect(why.locator('.st-evidence')).toHaveCount(2)
+    await expect(why.locator('.st-evidence').first()).toContainText('The Kanjo')
   })
 
   test('hero CTAs lead to the work and to the contact section', async ({ page }) => {
@@ -95,6 +140,13 @@ test.describe('studio content', () => {
     const hero = page.locator('.st-hero')
     await expect(hero.getByRole('link', { name: /explore our work/i })).toHaveAttribute('href', '#work')
     await expect(hero.getByRole('link', { name: /discuss a project/i })).toHaveAttribute('href', '#contact')
+  })
+
+  test('the studio homepage carries no JDM branding; the archive stays reachable from the footer', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('main')).not.toContainText(/\bJDM\b/)
+    await expect(page.locator('header')).not.toContainText(/\bJDM\b/)
+    await expect(page.locator('footer').getByRole('link', { name: 'Car archive' })).toHaveAttribute('href', '/archive')
   })
 
   test('public metadata: title, description, canonical, OpenGraph, Twitter, JSON-LD', async ({ page }) => {
@@ -113,6 +165,25 @@ test.describe('studio content', () => {
   })
 })
 
+test.describe('responsive layout', () => {
+  test.skip(({ isMobile }) => isMobile, 'viewport sweep runs once, from the desktop project')
+  for (const width of [1440, 1280, 768, 390, 360]) {
+    test(`homepage at ${width}px: no overflow, no broken images`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/')
+      await scrollThrough(page)
+      await page.waitForLoadState('networkidle')
+      const { scrollW, clientW, broken } = await page.evaluate(() => ({
+        scrollW: document.documentElement.scrollWidth,
+        clientW: document.documentElement.clientWidth,
+        broken: [...document.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.currentSrc || i.src),
+      }))
+      expect(scrollW).toBeLessThanOrEqual(clientW)
+      expect(broken).toEqual([])
+    })
+  }
+})
+
 test.describe('project enquiry', () => {
   // Every test gets its own client address so the per-client rate limit never interferes.
   let n = 0
@@ -123,7 +194,7 @@ test.describe('project enquiry', () => {
     const form = page.locator('form.st-form')
     await form.getByLabel('Name').fill(name)
     await form.getByLabel('Email').fill('client@example.org')
-    await form.getByLabel('Project type').selectOption('Cinematic & Video')
+    await form.getByLabel('Project type').selectOption('Cinematic & Video Production')
     await form.getByLabel('Timeline (optional)').fill('Spring 2027')
     await form.getByLabel('Project description').fill('A launch film combining location footage with real-time city shots.')
     await page.waitForTimeout(2_700) // a person takes longer than the server's minimum fill time
@@ -156,7 +227,7 @@ test.describe('project enquiry', () => {
     expect(authorized).toBe(true)
     expect(body.to).toEqual([process.env.SMOKE_INBOX])
     expect(body.reply_to).toBe('client@example.org')
-    expect(body.subject).toBe(`Project enquiry — Cinematic & Video — ${name}`)
+    expect(body.subject).toBe(`Project enquiry — Cinematic & Video Production — ${name}`)
     expect(body.text).toContain('Spring 2027')
   })
 
@@ -197,6 +268,193 @@ test.describe('project enquiry', () => {
   })
 })
 
+test.describe('journal API access control', () => {
+  test('every journal admin endpoint rejects a missing or wrong secret', async ({ request }) => {
+    for (const secret of [undefined, 'wrong-secret']) {
+      const ip = clientIp()
+      const headers: Record<string, string> = secret ? { 'x-admin-secret': secret, 'x-forwarded-for': ip } : { 'x-forwarded-for': ip }
+      expect((await request.get('/api/admin/journal', { headers })).status()).toBe(401)
+      expect((await request.post('/api/admin/journal', { headers, data: { title: 'x', slug: 'x' } })).status()).toBe(401)
+      expect((await request.put('/api/admin/journal', { headers, data: { id: crypto.randomUUID(), title: 'x' } })).status()).toBe(401)
+      expect((await request.delete('/api/admin/journal', { headers, data: { id: crypto.randomUUID() } })).status()).toBe(401)
+      expect((await request.put('/api/admin/journal/order', { headers, data: { ids: [crypto.randomUUID()] } })).status()).toBe(401)
+      expect((await request.get('/api/admin/journal/media', { headers })).status()).toBe(401)
+    }
+  })
+
+  test('the API validates slugs, rejects unknown fields and refuses to publish an empty article', async ({ request }) => {
+    const headers = adminHeaders()
+    const post = (data: object) => request.post('/api/admin/journal', { headers, data })
+    expect((await post({ title: 'T', slug: 'Bad Slug!' })).status()).toBe(400)
+    expect((await post({ title: 'T', slug: '-leading' })).status()).toBe(400)
+    expect((await post({ title: 'T', slug: 'double--hyphen' })).status()).toBe(400)
+    expect((await post({ title: 'T', slug: 'ok-slug', is_published: true })).status()).toBe(422) // no excerpt/body
+    expect((await post({ title: 'T', slug: 'ok-slug', cover_image_url: 'https://evil.example/x.jpg', cover_alt: 'x' })).status()).toBe(400)
+    expect((await post({ title: 'T', slug: 'ok-slug', role: 'admin' })).status()).toBe(400) // strict schema
+    const slug = `validation-${Date.now()}`
+    const created = await post({ title: 'Validation probe', slug })
+    expect(created.status()).toBe(201)
+    expect((await post({ title: 'Duplicate', slug })).status()).toBe(409)
+    const { article } = await created.json()
+    expect((await request.delete('/api/admin/journal', { headers, data: { id: article.id } })).status()).toBe(200)
+  })
+})
+
+test.describe('journal', () => {
+  test.describe.configure({ mode: 'serial' })
+  test.skip(({ isMobile }) => isMobile, 'shared CMS state: runs once, from the desktop project')
+
+  const stamp = Date.now()
+  const slug = `night-lighting-notes-${stamp}`
+  const title = `Night Lighting Notes ${stamp}`
+  const admin = () => `/${process.env.SMOKE_ADMIN_PATH}`
+
+  async function openJournalAdmin(page: Page) {
+    page.on('dialog', d => d.accept())
+    await page.setExtraHTTPHeaders({ 'x-forwarded-for': clientIp() })
+    await page.goto(admin())
+    await page.getByRole('button', { name: /Journal$/ }).click()
+    await expect(page.getByText('New article', { exact: true }).first()).toBeVisible()
+  }
+
+  test('no published article → no Journal section on the homepage, a restrained /journal', async ({ page, request }) => {
+    const res = await request.get('/api/admin/journal', { headers: adminHeaders() })
+    test.skip((await res.json()).articles.some((a: { is_published: boolean }) => a.is_published), 'articles already published in this run')
+    await page.goto('/')
+    await expect(page.locator('section#journal')).toHaveCount(0)
+    await page.goto('/journal')
+    await expect(page.locator('h1')).toHaveText('Inside the Process.')
+    await expect(page.getByText('No articles have been published yet.')).toBeVisible()
+    await expect(page.locator('.st-journal__card')).toHaveCount(0)
+  })
+
+  test('admin: create a draft with an uploaded cover; drafts stay private', async ({ page, request }) => {
+    await openJournalAdmin(page)
+    await page.getByLabel('Title').fill(title)
+    await expect(page.getByLabel('Slug')).toHaveValue(slug)
+    await page.getByLabel('Category').fill('Lighting')
+    await page.getByLabel('Excerpt').fill('How street lights, paint and bloom were balanced for a night expressway.')
+    await page.getByLabel('Body').fill([
+      '## Why night is hard', '', 'Sodium lights, **wet asphalt** and car paint all fight for the same highlights.', '',
+      '- Reflection probes', '- Lamp bloom', '', '[The Kanjo](https://www.thekanjo.com/)', '',
+      '<script>window.__xss = 1</script>', '', '[click me](javascript:window.__xss=2)',
+    ].join('\n'))
+    await page.locator('input[type="file"]').setInputFiles('public/images/projects/thekanjo-hero.webp')
+    const coverPreview = page.locator('img[alt="preview"]')
+    await expect(coverPreview).toBeVisible()
+    expect(await coverPreview.getAttribute('src')).toMatch(new RegExp(`^${process.env.MOCK_BACKEND_URL}/media/journal/`))
+    await page.getByLabel('Cover alt text').fill('A red hatchback on the expressway at night')
+
+    // Preview renders the article with the public components, before anything is published.
+    await page.getByRole('button', { name: 'Preview' }).click()
+    const preview = page.getByTestId('journal-preview')
+    await expect(preview.getByRole('heading', { level: 1, name: title })).toBeVisible()
+    await expect(preview.getByRole('heading', { level: 2, name: 'Why night is hard' })).toBeVisible()
+    await expect(preview.locator('strong')).toHaveText('wet asphalt')
+
+    await page.getByRole('button', { name: 'Save draft' }).click()
+    await expect(page.getByText('Saved')).toBeVisible()
+    await expect(page.getByTestId('journal-row').filter({ hasText: title })).toContainText('Draft')
+
+    expect((await request.get(`/journal/${slug}`)).status()).toBe(404)
+    await page.goto('/journal')
+    await expect(page.getByText(title)).toHaveCount(0)
+    await page.goto('/')
+    await expect(page.getByText(title)).toHaveCount(0)
+  })
+
+  test('admin: publish → the article appears on /journal, its page, the homepage and the sitemap', async ({ page, request }) => {
+    await openJournalAdmin(page)
+    await page.getByTestId('journal-row').filter({ hasText: title }).getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('button', { name: 'Publish' }).click()
+    await expect(page.getByText('Published', { exact: true }).first()).toBeVisible()
+
+    await page.goto('/journal')
+    const card = page.locator('.st-journal__card').filter({ hasText: title })
+    await expect(card).toHaveCount(1)
+    await expect(card).toContainText('Lighting')
+    await expect(card.locator('time')).toHaveText(new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' }).format(new Date()))
+    const cover = card.locator('img')
+    await expect(cover).toHaveAttribute('alt', 'A red hatchback on the expressway at night')
+    await expect.poll(() => cover.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true)
+
+    await card.getByRole('link', { name: title }).click()
+    await expect(page).toHaveURL(new RegExp(`/journal/${slug}$`))
+    await expect(page.locator('h1')).toHaveText(title)
+    await expect(page.locator('.st-prose h2')).toHaveText('Why night is hard')
+    await expect(page.locator('.st-prose a[href="https://www.thekanjo.com/"]')).toHaveAttribute('rel', /noopener/)
+    // Raw HTML and javascript: URLs never reach the page.
+    expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined()
+    await expect(page.locator('.st-prose script')).toHaveCount(0)
+    expect(await page.locator('.st-prose a', { hasText: 'click me' }).getAttribute('href')).not.toMatch(/javascript/i)
+    await expect(page).toHaveTitle(`${title} — DAINEKU Journal`)
+    expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toMatch(new RegExp(`/journal/${slug}$`))
+    expect(await page.locator('meta[property="og:type"]').getAttribute('content')).toBe('article')
+    const ld = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent()) ?? '{}')
+    expect(ld['@type']).toBe('Article')
+
+    await page.goto('/')
+    const home = page.locator('section#journal')
+    await expect(home.getByRole('heading', { level: 2 })).toHaveText('Inside the Process.')
+    await expect(home.getByRole('link', { name: title })).toHaveAttribute('href', `/journal/${slug}`)
+    await expect(home.locator('.st-journal__card')).toHaveCount(1)
+
+    expect(await (await request.get('/sitemap.xml')).text()).toContain(`/journal/${slug}`)
+  })
+
+  test('admin: an edit is live immediately; the media library re-uses an uploaded cover', async ({ page }) => {
+    await openJournalAdmin(page)
+    await page.getByTestId('journal-row').filter({ hasText: title }).getByRole('button', { name: 'Edit' }).click()
+    await page.getByLabel('Excerpt').fill('Updated excerpt: balancing street lights, paint and bloom.')
+    await page.getByRole('button', { name: 'Save changes' }).click()
+    await expect(page.getByText('Saved')).toBeVisible()
+
+    // Second article picks its cover from the library instead of uploading.
+    await page.getByRole('button', { name: 'New article' }).click()
+    await page.getByLabel('Title').fill(`Library Cover ${stamp}`)
+    await page.getByRole('button', { name: 'Choose from uploaded images' }).click()
+    await page.getByTitle('Use as cover').first().click()
+    await expect(page.locator('img[alt="preview"]')).toBeVisible()
+    await page.getByLabel('Cover alt text').fill('Library image')
+    await page.getByRole('button', { name: 'Save draft' }).click()
+    await expect(page.getByText('Saved')).toBeVisible()
+
+    await page.goto('/journal')
+    await expect(page.locator('.st-journal__card').filter({ hasText: title })).toContainText('Updated excerpt')
+  })
+
+  test('admin: featured order, unpublish and delete are reflected publicly', async ({ page, request }) => {
+    const headers = adminHeaders()
+    const second = await (await request.post('/api/admin/journal', { headers, data: {
+      title: `Traffic Notes ${stamp}`, slug: `traffic-notes-${stamp}`, excerpt: 'Lanes.', body: 'Body.', is_published: true, is_featured: true,
+    } })).json()
+    const { articles } = await (await request.get('/api/admin/journal', { headers })).json()
+    const first = articles.find((a: { slug: string }) => a.slug === slug)
+    await request.put('/api/admin/journal', { headers, data: { id: first.id, is_featured: true } })
+    await request.put('/api/admin/journal/order', { headers, data: { ids: [second.article.id, first.id] } })
+    await page.goto('/')
+    await expect(page.locator('#journal .st-journal__title').first()).toHaveText(`Traffic Notes ${stamp}`)
+    await request.put('/api/admin/journal/order', { headers, data: { ids: [first.id, second.article.id] } })
+    await page.goto('/')
+    await expect(page.locator('#journal .st-journal__title').first()).toHaveText(title)
+
+    await openJournalAdmin(page)
+    await page.getByTestId('journal-row').filter({ hasText: title }).getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('button', { name: 'Unpublish' }).click()
+    await expect(page.getByText('Unpublished')).toBeVisible()
+    expect((await request.get(`/journal/${slug}`)).status()).toBe(404)
+    expect(await (await request.get('/sitemap.xml')).text()).not.toContain(`/journal/${slug}`)
+
+    // Clean up everything this run created, through the UI's delete (with its confirmation).
+    for (const name of [title, `Library Cover ${stamp}`, `Traffic Notes ${stamp}`]) {
+      await page.getByTestId('journal-row').filter({ hasText: name }).getByRole('button', { name: 'Delete' }).click()
+      await expect(page.getByTestId('journal-row').filter({ hasText: name })).toHaveCount(0)
+    }
+    await page.goto('/journal')
+    await expect(page.getByText(String(stamp))).toHaveCount(0)
+  })
+})
+
 test.describe('mobile navigation', () => {
   test.skip(({ isMobile }) => !isMobile, 'mobile-only behaviour')
 
@@ -216,9 +474,9 @@ test.describe('mobile navigation', () => {
     await expect(burger).toBeFocused()
 
     await burger.click()
-    await menu.getByRole('link', { name: /process/i }).click()
+    await menu.getByRole('link', { name: /studio/i }).click()
     await expect(menu).toBeHidden()
-    await expect(page).toHaveURL(/#process$/)
+    await expect(page).toHaveURL(/#studio$/)
   })
 })
 
@@ -245,14 +503,16 @@ test.describe('legacy routes', () => {
     })
 
     await page.goto('/archive?brand=nissan')
-    await expect(page.locator('a.pgrid-card')).toHaveCount(11)
+    // At least the first batch. On a short viewport the scroll sentinel is already visible when it
+    // renders, so the second batch may follow before a snapshot can see exactly 11 — the batch
+    // sizes are asserted through the request sequence below instead.
+    await expect.poll(() => page.locator('a.pgrid-card').count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(11)
     // Scroll the document directly (mouse-wheel input is unreliable under touch emulation)
     // until the third batch has rendered.
-    for (let i = 0; i < 40 && (await page.locator('a.pgrid-card').count()) < 20; i++) {
+    await expect.poll(async () => {
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-      await page.waitForTimeout(300)
-    }
-    await expect(page.locator('a.pgrid-card')).toHaveCount(20)
+      return page.locator('a.pgrid-card').count()
+    }, { timeout: 30_000, intervals: [300] }).toBe(20)
     expect(calls).toEqual(['0/11/nissan', '11/6/nissan', '17/6/nissan'])
     await expect(page.getByText('― end ―')).toBeVisible()
   })

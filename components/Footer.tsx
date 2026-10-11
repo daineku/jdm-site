@@ -39,15 +39,15 @@ export default function Footer({ config, socials }: { config: SiteConfig; social
             <p className="st-label st-label--muted" style={{ margin: 0 }}>Studio</p>
             <ul>
               {[...STUDIO_NAV, { id: 'contact', label: 'Contact' } as const].map(item => (
-                <li key={item.id}><a className="st-footer__link" href={`/#${item.id}`}>{item.label}</a></li>
+                <li key={item.id}><a className="st-footer__link" href={'href' in item && item.href ? item.href : `/#${item.id}`}>{item.label}</a></li>
               ))}
             </ul>
           </nav>
 
           <div className="st-footer__col">
-            <p className="st-label st-label--muted" style={{ margin: 0 }}>Editorial</p>
+            <p className="st-label st-label--muted" style={{ margin: 0 }}>Archive</p>
             <ul>
-              <li><Link className="st-footer__link" href="/archive">JDM Archive</Link></li>
+              <li><Link className="st-footer__link" href="/archive">Car archive</Link></li>
               <li><Link className="st-footer__link" href="/builds">Builds</Link></li>
               <li><Link className="st-footer__link" href="/parts">Parts</Link></li>
             </ul>

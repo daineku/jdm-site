@@ -1,6 +1,6 @@
 # DAINEKU
 
-DAINEKU — independent studio for real-time simulation & spatial design. The studio site lives at `/`; the original JDM editorial archive (with its admin panel) lives at `/archive`. See HANDOFF.md §23.
+DAINEKU — independent studio for real-time simulation & spatial design. The studio site lives at `/`, the studio Journal at `/journal` (managed in the admin → Journal); the original car editorial archive lives at `/archive`. See HANDOFF.md §23.
 
 **Live:** daineku.com  
 **Admin:** `daineku.com/<ADMIN_SECRET_PATH>`  
@@ -10,7 +10,7 @@ DAINEKU — independent studio for real-time simulation & spatial design. The st
 
 ## What this is
 
-An editorial photo archive for JDM car models. Not a car listing or database. The homepage is a hand-curated photo feed managed by the owner. Model pages show a photo gallery, description, builds, accessories, videos, game appearances, build style categories, wheel specs, fitment data, and aftermarket mods.
+The DAINEKU studio website (homepage, Journal, contact) plus, under `/archive`, the original editorial photo archive for JDM car models. Not a car listing or database. The homepage is a hand-curated photo feed managed by the owner. Model pages show a photo gallery, description, builds, accessories, videos, game appearances, build style categories, wheel specs, fitment data, and aftermarket mods.
 
 ## What this is NOT
 
@@ -146,6 +146,7 @@ git push -u origin main --force
 ```bash
 npm run test:description   # 13-case unit test for description text formatter
 npm run test:contact       # enquiry validation unit tests
+npm run test:journal       # Journal article validation unit tests
 ```
 
 Expected output: `13 passed, 0 failed`. Must pass before every deploy.
@@ -193,7 +194,7 @@ The admin panel is organized into two sidebar groups:
 
 ## Services used
 
-**Supabase** — PostgreSQL database + anon/service-role access. RLS is disabled on all tables (single-owner site, no public write access). If `SUPABASE_SERVICE_ROLE_KEY` is missing, a console warning is emitted on server start and admin writes fall back to anon key.
+**Supabase** — PostgreSQL database + anon/service-role access. Public pages read with the anon key; every write goes through the service-role key on the server. `studio_articles` has RLS (published rows only); the legacy archive tables run without RLS — see HANDOFF.md §23 "Database access". If `SUPABASE_SERVICE_ROLE_KEY` is missing, a console warning is emitted on server start and admin writes fall back to anon key.
 
 **Cloudflare R2** — Object storage for images. Two objects per photo: full size (max 2400px) and thumbnail (max 800px). R2 public access must be enabled on the `jdm-photos` bucket.
 

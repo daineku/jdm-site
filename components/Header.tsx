@@ -26,7 +26,7 @@ export default function Header({ socials }: { socials: SocialLink[] }) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Hash links work from every page: on "/" they scroll, elsewhere they navigate home.
-  const href = (id: string) => `/#${id}`
+  const href = (id: string) => STUDIO_NAV.find(n => n.id === id)?.href ?? `/#${id}`
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)

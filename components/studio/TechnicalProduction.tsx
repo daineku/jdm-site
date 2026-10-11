@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react'
 import hero from '@/public/images/brand/hero.png'
-import { BEHIND, KANJO_URL } from './content'
-import { Arrow, Crop, delay } from './primitives'
+import { TECHNICAL } from './content'
+import { Crop, delay } from './primitives'
 
-// Tight square study of the half-built block: wireframe massing, lit floors, facade, barrier.
+// Tight square study of the half-built block in the studio key visual: wireframe massing, lit
+// floors, facade, barrier. It illustrates environment layers in general — it is not a Kanjo frame,
+// and its tag says so.
 const REGION = { x: 500, y: 170, w: 500, h: 500 }
 
 // Pins in % of the frame, measured on a 10% grid of REGION — locked to the picture because the crop is fixed (see Crop).
@@ -14,30 +16,27 @@ const PINS = [
   { x: 30, y: 86, side: 'r', k: 'Geometry', v: 'Barrier mesh' },
 ] as const
 
-export default function BehindSimulation() {
+// The Kanjo is linked once, from Selected Work; this section adds evidence, not another link.
+export default function TechnicalProduction() {
   return (
-    <section className="st-section" aria-labelledby="behind-title" style={{ paddingTop: 0 }}>
+    <section id="technical" className="st-section" aria-labelledby="technical-title" style={{ paddingTop: 0 }}>
       <div className="st-band">
         <div className="st-container" data-reveal="">
-          <p className="st-label st-label--rule" style={{ margin: 0 }}>{BEHIND.label}</p>
-          <h2 id="behind-title" className="st-h2">{BEHIND.title}</h2>
+          <p className="st-label st-label--rule" style={{ margin: 0 }}>{TECHNICAL.label}</p>
+          <h2 id="technical-title" className="st-h2">{TECHNICAL.title}</h2>
         </div>
       </div>
 
       <div className="st-container" style={{ paddingTop: 'var(--st-section-y)' }}>
         <div className="st-behind__split">
           <div className="st-behind__copy" data-reveal="">
-            {BEHIND.body.map((p, i) => (
-              <p key={p.slice(0, 24)} className={i === 0 ? 'st-lead' : 'st-body'} style={i === 0 ? { color: 'var(--st-text)' } : undefined}>{p}</p>
-            ))}
-            <a href={KANJO_URL} target="_blank" rel="noopener" className="st-btn st-btn--green">
-              {BEHIND.cta} <Arrow diagonal /><span className="st-visually-hidden"> (opens thekanjo.com in a new tab)</span>
-            </a>
+            <p className="st-lead" style={{ color: 'var(--st-text)' }}>{TECHNICAL.body}</p>
           </div>
 
           <figure style={{ margin: 0 }} data-reveal="">
             <Crop src={hero} region={REGION} className="st-annot" frameVw={52} frameMaxPx={700}
-              alt="Detail of the key visual, annotated: a building half in wireframe, its lit floors, facade materials and the road barrier mesh.">
+              alt="Detail of the studio key visual, annotated: a building half in wireframe, its lit floors, facade materials and the road barrier mesh.">
+              <span className="st-frame-tag st-frame-tag--tl">Studio key visual · layers</span>
               {PINS.map(p => (
                 <span key={p.k} className="st-annot__pin" style={{ '--x': `${p.x}%`, '--y': `${p.y}%` } as CSSProperties}>
                   <span className="st-annot__dot" />
@@ -49,13 +48,13 @@ export default function BehindSimulation() {
               ))}
             </Crop>
             <figcaption className="st-visually-hidden">
-              Annotated layers: environment construction, interior light, facade materials and barrier geometry.
+              Environment layers in the studio key visual: construction, interior light, facade materials and barrier geometry.
             </figcaption>
           </figure>
         </div>
 
         <ol className="st-components">
-          {BEHIND.items.map((item, i) => (
+          {TECHNICAL.items.map((item, i) => (
             <li key={item.n} data-reveal="" style={delay(i * 90)}>
               <span className="st-num">{item.n}</span>
               <h3 className="st-h3">{item.title}</h3>

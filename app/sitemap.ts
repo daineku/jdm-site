@@ -1,6 +1,10 @@
 import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
 import { getBaseUrl } from '@/lib/seo'
+import { getPublishedArticles } from '@/lib/journal'
+
+// Built per request so a Journal article appears (or disappears) the moment it is saved in the admin.
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl()
@@ -51,6 +55,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
+  const articles = await getPublishedArticles()
+  const journalUrls = [
+    { url: `${baseUrl}/journal`, lastModified: articles[0]?.published_at ?? new Date().toISOString(), changeFrequency: 'weekly' as const, priority: 0.8 },
+    ...articles.map(a => ({
+      url: `${baseUrl}/journal/${a.slug}`,
+      lastModified: a.published_at ?? undefined,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ]
+
   return [
     {
       url: baseUrl,
@@ -58,6 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 1.0,
     },
+    ...journalUrls,
     archiveUrl,
     ...modelUrls,
     buildsListingUrl,

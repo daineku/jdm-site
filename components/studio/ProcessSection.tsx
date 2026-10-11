@@ -9,7 +9,6 @@ export default function ProcessSection() {
         <div className="st-process__intro" data-reveal="">
           <span className="st-chip"><span className="st-label">{PROCESS.label}</span></span>
           <h2 id="process-title" className="st-h2">{PROCESS.title}</h2>
-          <p className="st-lead">{PROCESS.body}</p>
         </div>
         <ol className="st-process__cards">
           {PROCESS.steps.map((step, i) => (
