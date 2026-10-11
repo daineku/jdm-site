@@ -4,11 +4,12 @@
  * finished commercial work — The Kanjo is the studio's own project in development,
  * and every technical statement about it must be true of the current game.
  *
- * Each section has one job; avoid restating another section's message:
- *   Hero — who we are · What We Build — what a client can commission · Why Daineku — the
- *   integrated advantage, with evidence · Selected Work — The Kanjo · Technical Production —
- *   systems the game demonstrates · Journal — articles (CMS) · Studio — the business ·
- *   Process — how a commission runs · Contact.
+ * Each section has one job; do not restate another section's message:
+ *   Hero — what the studio builds · What We Build — what a client can commission ·
+ *   Selected Work — The Kanjo and the systems developed for it (the technical proof) ·
+ *   Journal — articles (CMS) · Process — how a commission runs · Contact.
+ * Describe what is built and how it behaves. No organisational slogans, no generic talk of
+ * realism or immersion.
  */
 
 /** Verified public destination for The Kanjo (states "Published by Daineku"). Linked once, from Selected Work. */
@@ -19,117 +20,144 @@ export const STUDIO_NAV: readonly { id: string; label: string; href?: string }[]
   { id: 'services', label: 'Services' },
   { id: 'work',     label: 'Work' },
   { id: 'journal',  label: 'Journal', href: '/journal' },
-  { id: 'studio',   label: 'Studio' },
+  { id: 'process',  label: 'Process' },
 ]
 
 export const HERO = {
-  eyebrow: 'Independent development studio',
-  headline: 'We build worlds that feel real.',
-  body: 'DAINEKU builds real-time simulations, navigable 3D environments and cinematic video — for our own games, starting with The Kanjo, and for selected commissions.',
-  disciplines: ['Real-time simulation', 'Spatial design', 'Cinematic production'],
+  headline: 'Real-time simulation, interactive 3D environments, cinematic visuals.',
+  body: 'We develop vehicle and traffic simulation, build environments people can drive or walk through, and produce video and stills from them. Our own racing game, The Kanjo, is where these systems are built and tested.',
+  disciplines: ['Vehicle dynamics · AI traffic', 'Worldbuilding · lighting', 'Trailers · in-engine film'],
   primaryCta: 'Explore our work',
   secondaryCta: 'Discuss a project',
 }
 
 export const SERVICES = {
   title: 'What We Build',
-  intro: 'Three kinds of commission, delivered by one team.',
+  intro: 'Three services, each scoped per project.',
   items: [
     {
       n: '01',
-      title: 'Interactive Simulation & Prototyping',
-      body: 'Playable, testable software for ideas that depend on movement and physical behaviour.',
+      title: 'Real-Time Simulation',
+      body: 'Software that models how vehicles and road users behave, responding to input as it runs.',
       deliverables: [
-        'Vehicle and driving prototypes',
-        'Interactive 3D product demonstrations',
-        'Traffic and movement systems',
-        'Technical gameplay prototypes',
+        'Vehicle dynamics and handling models',
+        'AI traffic and driver behaviour',
+        'Interactive simulation software',
+        'Playable simulation prototypes',
       ],
-      need: 'We need to see how it moves before committing to full production.',
     },
     {
       n: '02',
-      title: 'Digital Environments & Spatial Visualisation',
-      body: 'Real-time 3D spaces that people can move through, not only view as still renders.',
+      title: 'Spatial Design',
+      body: 'Digital environments built to be navigated in real time, not only presented as still renders.',
       deliverables: [
-        'Navigable urban and architectural scenes',
-        'Modular environment asset kits',
-        'Material and lighting studies',
-        'Optimisation for real-time rendering',
+        'Navigable digital environments',
+        'Worldbuilding and scene construction',
+        'Lighting and look development',
+        'Real-time rendering set-up',
       ],
-      need: 'We need a large scene that stays detailed and still runs smoothly.',
     },
     {
       n: '03',
-      title: 'Cinematic & Video Production',
-      body: 'Films and sequences, from engine-rendered shots to edited live action.',
+      title: 'Cinematic Production',
+      body: 'Video and visual material produced from real-time scenes.',
       deliverables: [
-        'Project trailers and product films',
-        'Real-time engine cinematics',
-        'Camera direction, editing and colour grading',
-        'Live action combined with rendered visuals',
+        'Trailers and teasers',
+        'In-engine cinematics and camera sequences',
+        'Key art and still renders',
+        'Editing and colour grading to final master',
       ],
-      need: 'We want our interactive scene turned into a trailer.',
     },
   ],
 }
 
-export const WHY = {
-  label: 'Why Daineku',
-  title: 'Built to Work. Designed to Feel Real.',
-  body: 'DAINEKU develops the space, the systems inside it and the way the experience is presented. Visual direction, interaction and real-time performance are considered together from the beginning — not handed between separate 3D, software and video suppliers.',
-  items: [
-    {
-      title: 'Functional Worlds, Not Just Rendered Scenes',
-      body: 'Environments are built to be driven, walked or explored, with scale, collision and sightlines worked out — not only composed for a single frame.',
-      evidence: 'The Kanjo is a drivable night expressway shared with traffic.',
-    },
-    {
-      title: 'Prototype and Validate in Real Time',
-      body: 'Systems are tested inside the environment while it is still being built, so issues with handling, behaviour or readability show up early.',
-      evidence: 'In The Kanjo, handling, traffic, opponents and cameras are tuned in the running game.',
-    },
-    {
-      title: 'One Environment, Multiple Outputs',
-      body: 'A single scene can serve an interactive build, a technical demonstration and cinematic footage, instead of being rebuilt for each.',
-      evidence: null,
-    },
-  ],
-}
+/** `implemented`: runs in the current internal build. `progress`: runs, but has open defects still being fixed. */
+export type SystemStatus = 'implemented' | 'progress'
 
 export const WORK = {
   title: 'Selected Work',
-  subtitle: 'Our own game — where the methods we offer are tested in practice.',
+  subtitle: 'The studio’s own racing game, in development, and the systems built for it.',
   kanjo: {
     name: 'The Kanjo',
     category: 'Original IP / Racing game in development',
     headline: 'A Night Expressway, Built to Drive.',
     body: [
       'The Kanjo is a racing game set on a single elevated expressway loop at night — a fictionalised Japanese circuit inspired by late-1990s highway racing culture.',
-      'It is where we develop vehicle handling, traffic that shares the road, opponent racers, camera systems and night lighting, all running together in real time.',
+      'Everything listed below runs together in the current internal Windows build.',
     ],
     facts: [
       { label: 'Type', value: 'Original IP, owned by the studio' },
       { label: 'Status', value: 'In development' },
-      { label: 'Engine', value: 'Unity 6' },
+      { label: 'Core System', value: 'Real Car Simulation' },
     ],
     image: {
       alt: 'The Kanjo: a red hatchback with a tall rear wing on an elevated expressway at night, two cars ahead under orange street lights.',
     },
     cta: 'Explore The Kanjo',
+    // Each item checked against the game project (October 2026). Do not upgrade a status, add hardware
+    // or claim a feature without checking the current build again.
+    systems: {
+      title: 'Developed systems',
+      intro: 'What has been built for The Kanjo and how it behaves. “In progress” marks systems that run in the game but still have open defects.',
+      items: [
+        {
+          title: 'Vehicle Simulation',
+          status: 'implemented' as SystemStatus,
+          body: 'The car is driven by a physically-based model. Wheel suspension provides ground contact; our own tyre and drivetrain code computes the force at each contact patch, so grip, slides and weight transfer come out of the model rather than scripted rules.',
+          built: [
+            'Pacejka tyre model with combined slip and load sensitivity',
+            'Engine torque curve, clutch and gearbox with real shift time',
+            'Biased differential, anti-roll bars, Ackermann steering, aerodynamic drag',
+            'Engine sound from RPM-mapped recordings; tyre and road sound driven by the tyre model',
+          ],
+        },
+        {
+          title: 'AI Traffic',
+          status: 'progress' as SystemStatus,
+          body: 'Up to 42 vehicles share the expressway with the player. Each follows a route around the loop, keeps a time gap to the car ahead, moves across lanes with indicators and goes around blocked vehicles. The player’s car is one of the vehicles they react to.',
+          built: [
+            'Pooled fleet: no vehicles created or destroyed while driving',
+            'Per-car following distance and cruising lane',
+            'Level of detail by distance from the player',
+            'Crash handling: impact, physical recovery, rejoining the road',
+          ],
+        },
+        {
+          title: 'Rival Racing & Rolling Starts',
+          status: 'progress' as SystemStatus,
+          body: 'A race starts from a parking area, or by flashing the headlights at a passing racer. Both cars are placed into a rolling start at 50 km/h, then a countdown. The rival plans overtakes through traffic and defends its position; winnings are paid into the player’s in-game economy. One race route exists so far.',
+          built: [
+            'Race sequence: selection, staging, countdown, race, result, reward',
+            'Rolling-start placement for player and rival',
+            'Rival tactics: overtake, escape, defend',
+            'Each result pays out once',
+          ],
+        },
+        {
+          title: 'Steering Wheel & Instrumentation',
+          status: 'implemented' as SystemStatus,
+          body: 'Wheel input and force feedback on Windows run through a native DirectInput layer, because Unity’s input system cannot create force-feedback effects. The force is computed from the front tyres’ aligning moment in the vehicle model, so what the driver feels follows what the tyres are doing.',
+          built: [
+            'Force feedback faded in with speed, with a safety cap',
+            'Per-device calibration; validated on a MOZA R3 wheel and pedals',
+            'Paddle shifting through the same gearbox',
+            'Digital cluster — tachometer, speed, gear, fuel — in the cockpit and as a HUD',
+          ],
+        },
+        {
+          title: 'Environment & Lighting',
+          status: 'implemented' as SystemStatus,
+          body: 'A closed night expressway loop assembled from 91 track sections. The road is lit by 738 baked street lights; car lamps, reflections and post-processing run in real time on top of that.',
+          built: [
+            'Brake, tail and indicator lamps driven by the car’s state',
+            'Reflection probes, night-sky and wet-road reflections',
+            'Bloom, halation, volumetric fog and colour grading',
+            'NVIDIA DLSS on supported hardware',
+          ],
+        },
+      ],
+    },
   },
-}
-
-export const TECHNICAL = {
-  label: 'Technical Production',
-  title: 'What The Kanjo Demonstrates.',
-  body: 'Systems we have built and tuned in our own game — the same work a simulation, environment or cinematic commission draws on.',
-  items: [
-    { n: '01', title: 'Vehicle Handling', body: 'Drivable cars with tuned handling, chase cameras, and engine, tyre and road audio.' },
-    { n: '02', title: 'Traffic & Opponents', body: 'Ambient traffic that keeps to its lanes on a shared carriageway, and AI opponents that race through it.' },
-    { n: '03', title: 'Environment at Scale', body: 'A continuous elevated loop with junctions and connecting roads, assembled from modular real-time geometry.' },
-    { n: '04', title: 'Night Lighting & Materials', body: 'Street lighting, reflective car paint, lamps and bloom balanced for a night scene seen in motion.' },
-  ],
 }
 
 export const JOURNAL = {
@@ -137,15 +165,6 @@ export const JOURNAL = {
   title: 'Inside the Process.',
   lead: 'Development notes, technical experiments and the decisions behind our work.',
   cta: 'All articles',
-}
-
-export const ABOUT = {
-  label: 'Studio',
-  title: 'Independent by Design.',
-  body: [
-    'DAINEKU is an independent development studio. Most of our time goes into our own products, starting with The Kanjo.',
-    'We also take on selected commissioned projects. Each is scoped individually, and the people who build our own work build yours.',
-  ],
 }
 
 export const PROCESS = {
@@ -172,5 +191,5 @@ export const CONTACT = {
   title: "Let's Build Something.",
   body: 'Tell us what you are making, who it is for and what you need delivered — a prototype, an environment, a film, or a combination.',
   cta: 'Discuss a project',
-  scope: 'Commissioned simulations, real-time environments and cinematic production — each scoped individually.',
+  scope: 'Useful to include: target platform or hardware, deadline, and whether you need a build, source files or rendered video.',
 }

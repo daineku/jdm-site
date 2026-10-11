@@ -1,6 +1,6 @@
 import kanjoHero from '@/public/images/projects/thekanjo-hero.webp'
-import { KANJO_URL, WORK } from './content'
-import { Arrow, Cover, SectionHeading } from './primitives'
+import { KANJO_URL, WORK, type SystemStatus } from './content'
+import { Arrow, Cover, SectionHeading, delay } from './primitives'
 
 // The Kanjo's own approved hero (daineku/kanjo public/media/hero/hero.png, 6336×2688), resized to
 // 2560px WebP. The red car sits at x 47–88% of the frame; the 16:11 frame shows ~62% of the width,
@@ -8,6 +8,8 @@ import { Arrow, Cover, SectionHeading } from './primitives'
 // desktop keeps the source's vertical 58% so the road carries the bottom of the frame.
 const POSITION = '70% 58%'
 const MOBILE_POSITION = '72% 50%'
+
+const STATUS_LABEL: Record<SystemStatus, string> = { implemented: 'Implemented', progress: 'In progress' }
 
 export default function SelectedWork() {
   const { kanjo } = WORK
@@ -38,6 +40,29 @@ export default function SelectedWork() {
             </a>
           </div>
         </article>
+
+        {/* The technical proof sits with the project it comes from, under its own artwork. */}
+        <section className="st-systems" aria-labelledby="systems-title">
+          <div className="st-systems__head" data-reveal="">
+            <h3 id="systems-title" className="st-label st-label--rule" style={{ margin: 0 }}>{kanjo.systems.title}</h3>
+            <p className="st-body">{kanjo.systems.intro}</p>
+          </div>
+          <ol className="st-systems__list">
+            {kanjo.systems.items.map((item, i) => (
+              <li key={item.title} data-reveal="" style={delay(i * 80)}>
+                <div className="st-systems__title">
+                  <span className="st-num">{String(i + 1).padStart(2, '0')}</span>
+                  <h4 className="st-h3">{item.title}</h4>
+                </div>
+                <p className={`st-status st-status--${item.status}`}>{STATUS_LABEL[item.status]}</p>
+                <p className="st-body">{item.body}</p>
+                <ul className="st-deliverables" aria-label={`${item.title}: what was built`}>
+                  {item.built.map(d => <li key={d}>{d}</li>)}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </section>
       </div>
     </section>
   )

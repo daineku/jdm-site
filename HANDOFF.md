@@ -914,8 +914,8 @@ Admin → **Archive Feed** (was "Homepage") curates `/archive`. Data model uncha
 - `components/studio/content.ts` — all homepage copy. No invented clients, metrics or awards; The Kanjo is an own project *in development*.
 - `components/studio/studio.css` — design system, every rule scoped under `.studio` / `st-*`. The `.studio a` reset uses `:where()` (zero specificity) so it beats the legacy global `a { color: #39FF14 }` by source order without overriding component classes.
 - `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `Cover` (whole image, framed by object-position only, separate desktop/mobile positions), `SectionHeading`, `SectionDivider`, `delay()`.
-- `components/studio/visuals.tsx` — vector glyphs (simulation path, massing, input states, camera framing). Decorative.
-- Homepage order (`app/page.tsx`): Hero → `StudioServices` (What We Build) → `WhyDaineku` → `SelectedWork` (The Kanjo) → `TechnicalProduction` → `JournalSection` (hidden with no published article) → `StudioAbout` → `ProcessSection` → `StudioContact`.
+- `components/studio/visuals.tsx` — `SimulationDiagram` (the services card's vehicle-path figure). Decorative.
+- Homepage order (`app/page.tsx`): Hero → `StudioServices` (What We Build) → `SelectedWork` (The Kanjo + Developed systems) → `JournalSection` (hidden with no published article) → `ProcessSection` → `StudioContact`. Why Daineku, Technical Production and Studio were removed in v10.3 as repetition.
 - `components/studio/Reveal.tsx` — one IntersectionObserver for `[data-reveal]`. Content is visible in server HTML; the hidden state is armed only after mount and never under `prefers-reduced-motion`.
 
 ### Brand assets — `public/images/brand/`
@@ -934,15 +934,15 @@ No font is fetched from Google — at build time or runtime.
 - **Do not switch to `next/font/google`** — on Next 15.3.6 its loader crashes on current Google Fonts responses (`Cannot read properties of null (reading '1')`), failing the build.
 - `@font-face` must stay *after* `@import "tailwindcss"` (CSS `@import` must precede all other rules).
 
-### Positioning & copy (v10.2)
+### Positioning & copy (v10.3)
 
-All homepage copy lives in `components/studio/content.ts`; each section has one job (see the header comment there). British English throughout.
+All homepage copy lives in `components/studio/content.ts`; each section has one job (see the header comment there). British English throughout. The page says what the studio builds, not what kind of organisation it is — no "independent studio" lines.
 
-- **What We Build** — three commissions (Interactive Simulation & Prototyping · Digital Environments & Spatial Visualisation · Cinematic & Video Production), each with four concrete deliverables and one typical brief.
-- **Why Daineku** — "Built to Work. Designed to Feel Real.": three differentiators; the first two carry an *Evidence* line from The Kanjo, the third is stated as an approach (no evidence line, on purpose).
-- **Selected Work** — The Kanjo, with its real artwork. The **only** link to `https://www.thekanjo.com/` on the page (`KANJO_URL`, "Explore The Kanjo ↗"). Facts: original IP, in development, Unity 6.
-- **Technical Production** — four systems the game demonstrates. No CTA (it used to repeat the Kanjo link).
-- Every technical statement about The Kanjo was checked against the game project before publication. Do not add performance figures, platforms, controller support, clients or a showreel without new evidence.
+- **Hero** — the one positioning statement: real-time simulation, interactive 3D environments, cinematic visuals. The meta row gives the specifics (vehicle dynamics · AI traffic, worldbuilding · lighting, trailers · in-engine film).
+- **What We Build** — Real-Time Simulation (vehicle dynamics, AI traffic, interactive software, prototypes) · Spatial Design (navigable environments, worldbuilding, scene construction, lighting, rendering) · Cinematic Production (trailers, in-engine cinematics, key art, edit and grade). No interior/architectural design, no client quotes.
+- **Selected Work** — The Kanjo, with its real artwork. The **only** link to `https://www.thekanjo.com/` on the page (`KANJO_URL`, "Explore The Kanjo ↗"). Facts: Type, Status, **Core System — Real Car Simulation** (the engine is deliberately not named). Under it, **Developed systems** (`WORK.kanjo.systems`): five systems, each with a status — *Implemented* (runs in the current internal build) or *In progress* (runs, with open defects) — a description of behaviour and four items that were built.
+- **Process** and **Contact** carry practical information only.
+- Every technical statement about The Kanjo was checked against the game project before publication. The systems list was checked against the game repository on 12 October 2026: AI Traffic and Rival Racing are *In progress* because of open defects; wheel support is validated on the MOZA R3 only. Do not upgrade a status, name other wheels, or add performance figures, platforms, clients or a showreel without checking again.
 
 ### Contact — project enquiries
 
@@ -1004,7 +1004,7 @@ The legacy archive tables pre-date this work and run with RLS disabled (see `mig
 | `npm run test:contact` | 8 passed — enquiry validation (`lib/contact.test.ts`, Node test runner) |
 | `npm run test:journal` | 6 passed — article validation and slugs (`lib/journal.test.ts`) |
 | `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
-| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 59 passed, 11 skipped by design |
+| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 63 passed, 11 skipped by design |
 
 - `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
 - Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.

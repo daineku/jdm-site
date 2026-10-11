@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
-const STUDIO_SECTIONS = ['services', 'why', 'work', 'technical', 'studio', 'process', 'contact']
+const STUDIO_SECTIONS = ['services', 'work', 'process', 'contact']
+/** Sections retired in the positioning review — they must not come back. */
+const RETIRED_SECTIONS = ['why', 'technical', 'studio']
 
 /**
  * The admin API rate-limits per client IP (lib/adminAuth.ts, 60/min). Locally every request
@@ -29,8 +31,9 @@ test.describe('studio homepage', () => {
 
     await page.goto('/')
     await expect(page.locator('h1')).toHaveCount(1)
-    await expect(page.locator('h1')).toHaveText(/We build worlds that feel real\./i)
+    await expect(page.locator('h1')).toHaveText('Real-time simulation, interactive 3D environments, cinematic visuals.')
     for (const id of STUDIO_SECTIONS) await expect(page.locator(`section#${id}`)).toHaveCount(1)
+    for (const id of RETIRED_SECTIONS) await expect(page.locator(`#${id}`)).toHaveCount(0)
 
     await scrollThrough(page)
     await page.waitForLoadState('networkidle')
@@ -67,32 +70,39 @@ test.describe('studio homepage', () => {
 })
 
 test.describe('studio content', () => {
-  test('What We Build lists the three commissions, each with concrete deliverables', async ({ page }) => {
+  test('the hero states what the studio builds, with no organisational slogan', async ({ page }) => {
+    await page.goto('/')
+    const hero = page.locator('.st-hero')
+    await expect(hero.locator('.st-hero__disciplines li')).toHaveCount(3)
+    for (const phrase of [/independent/i, /we build worlds/i, /by design/i]) await expect(page.locator('main')).not.toContainText(phrase)
+  })
+
+  test('What We Build lists the three services, each with concrete deliverables', async ({ page }) => {
     await page.goto('/')
     const section = page.locator('section#services')
     await expect(section.getByRole('heading', { level: 2 })).toHaveText('What We Build')
-    await expect(section.locator('h3')).toHaveText([
-      /Interactive Simulation & Prototyping/, /Digital Environments & Spatial Visualisation/, /Cinematic & Video Production/,
-    ])
+    await expect(section.locator('h3')).toHaveText([/Real-Time Simulation/, /Spatial Design/, /Cinematic Production/])
     for (const card of await section.locator('.st-worlds__card').all()) {
       await expect(card.locator('.st-deliverables li')).toHaveCount(4)
-      await expect(card.locator('.st-need')).toBeVisible()
     }
+    await expect(section.locator('.st-worlds__card').first()).toContainText('Vehicle dynamics')
+    await expect(section.locator('.st-worlds__card').first()).toContainText('AI traffic')
+    // Generic interior/architectural design is no longer offered.
+    await expect(section).not.toContainText(/architectur|interior/i)
   })
 
   test('section headings follow the agreed structure, in order', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('h2')).toContainText([
-      'What We Build', 'Built to Work. Designed to Feel Real.', 'Selected Work', 'What The Kanjo Demonstrates.',
-      'Independent by Design.', 'From Idea to Delivery.', "Let's Build Something.",
-    ])
-    await expect(page.locator('#why .st-design__row')).toHaveCount(3)
-    await expect(page.locator('#technical .st-components > li')).toHaveCount(4)
+    // The Journal section appears only while an article is published (journal tests may run in parallel).
+    const h2 = (await page.locator('h2').allTextContents()).filter(t => t !== 'Inside the Process.')
+    expect(h2).toEqual(['What We Build', 'Selected Work', 'From Idea to Delivery.', "Let's Build Something."])
     await expect(page.locator('#process ol > li')).toHaveCount(4)
-    // Retired sections must not come back.
-    for (const gone of ['Production Capabilities', 'One World. Many Systems.', 'Designed as One Experience.', 'A City Built to Move.']) {
+    for (const gone of ['Production Capabilities', 'One World. Many Systems.', 'What The Kanjo Demonstrates.',
+      'Built to Work. Designed to Feel Real.', 'Independent by Design.', 'A City Built to Move.']) {
       await expect(page.getByRole('heading', { name: gone })).toHaveCount(0)
     }
+    // The annotated key-visual study does not show The Kanjo and must not return.
+    await expect(page.locator('main')).not.toContainText(/Interior emissive|Concrete · glass/)
   })
 
   test('The Kanjo case study shows the real project artwork, not a crop of the studio key visual', async ({ page }) => {
@@ -101,7 +111,6 @@ test.describe('studio content', () => {
     await expect(work.getByRole('heading', { name: 'A Night Expressway, Built to Drive.' })).toBeVisible()
     await expect(work).toContainText('Original IP')
     await expect(work).toContainText('In development')
-    await expect(work).toContainText('Unity 6')
     const img = work.locator('img')
     await expect(img).toHaveCount(1)
     await expect(img).toHaveAttribute('alt', /red hatchback.*expressway at night/i)
@@ -114,6 +123,29 @@ test.describe('studio content', () => {
     expect(await img.evaluate(i => getComputedStyle(i).objectPosition)).toMatch(/^7\d% /)
   })
 
+  test('the case study names its core system, not the engine', async ({ page }) => {
+    await page.goto('/')
+    const facts = page.locator('#work .st-facts')
+    await expect(facts.locator('dt')).toHaveText(['Type', 'Status', 'Core System'])
+    await expect(facts.locator('dd').nth(2)).toHaveText('Real Car Simulation')
+    await expect(page.locator('main')).not.toContainText(/Unity 6/)
+  })
+
+  test('developed systems sit under the case study, each with a status and what was built', async ({ page }) => {
+    await page.goto('/')
+    const systems = page.locator('#work .st-systems')
+    await expect(systems.getByRole('heading', { level: 3, name: 'Developed systems' })).toBeVisible()
+    await expect(systems.locator('h4')).toHaveText([
+      'Vehicle Simulation', 'AI Traffic', 'Rival Racing & Rolling Starts', 'Steering Wheel & Instrumentation', 'Environment & Lighting',
+    ])
+    await expect(systems.locator('.st-status')).toHaveText(['Implemented', 'In progress', 'In progress', 'Implemented', 'Implemented'])
+    for (const item of await systems.locator('.st-systems__list > li').all()) {
+      await expect(item.locator('.st-deliverables li')).toHaveCount(4)
+    }
+    await expect(systems).toContainText('MOZA R3')
+    await expect(systems.locator('a')).toHaveCount(0)
+  })
+
   test('The Kanjo is linked exactly once, from the case study, as an external CTA', async ({ page }) => {
     await page.goto('/')
     const links = page.locator('a[href*="thekanjo.com"]')
@@ -122,17 +154,6 @@ test.describe('studio content', () => {
     await expect(cta).toHaveAttribute('href', 'https://www.thekanjo.com/')
     await expect(cta).toHaveAttribute('target', '_blank')
     await expect(cta).toHaveAttribute('rel', /noopener/)
-    await expect(page.locator('#technical a')).toHaveCount(0)
-  })
-
-  test('Why Daineku ties its differentiators to evidence from The Kanjo', async ({ page }) => {
-    await page.goto('/')
-    const why = page.locator('#why')
-    await expect(why.locator('h3')).toHaveText([
-      'Functional Worlds, Not Just Rendered Scenes', 'Prototype and Validate in Real Time', 'One Environment, Multiple Outputs',
-    ])
-    await expect(why.locator('.st-evidence')).toHaveCount(2)
-    await expect(why.locator('.st-evidence').first()).toContainText('The Kanjo')
   })
 
   test('hero CTAs lead to the work and to the contact section', async ({ page }) => {
@@ -153,7 +174,8 @@ test.describe('studio content', () => {
     await page.goto('/')
     await expect(page).toHaveTitle('DAINEKU — Real-Time Simulation & Spatial Design Studio')
     const meta = (sel: string) => page.locator(sel).first().getAttribute('content')
-    expect(await meta('meta[name="description"]')).toMatch(/independent development studio.*cinematic video production/i)
+    expect(await meta('meta[name="description"]')).toMatch(/real-time simulation.*cinematic visuals.*The Kanjo/i)
+    expect(await meta('meta[name="description"]')).not.toMatch(/independent/i)
     expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toMatch(/^https:\/\/[^/]+\/?$/) // the site root
     expect(await meta('meta[property="og:title"]')).toBe('DAINEKU — Real-Time Simulation & Spatial Design Studio')
     expect(await meta('meta[property="og:image"]')).toMatch(/\/images\/brand\/og\.jpg$/)
@@ -474,9 +496,9 @@ test.describe('mobile navigation', () => {
     await expect(burger).toBeFocused()
 
     await burger.click()
-    await menu.getByRole('link', { name: /studio/i }).click()
+    await menu.getByRole('link', { name: /process/i }).click()
     await expect(menu).toBeHidden()
-    await expect(page).toHaveURL(/#studio$/)
+    await expect(page).toHaveURL(/#process$/)
   })
 })
 
@@ -558,7 +580,7 @@ test.describe('motion', () => {
   test('default motion: below-fold content reveals once scrolled into view', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    const target = page.locator('#studio [data-reveal]').first()
+    const target = page.locator('#process [data-reveal]').first()
     await expect(target).not.toHaveClass(/is-in/)
     await target.scrollIntoViewIfNeeded()
     await expect(target).toHaveClass(/is-in/)

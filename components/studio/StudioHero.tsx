@@ -22,7 +22,6 @@ export default function StudioHero() {
 
       <div className="st-container st-hero__content">
         <div className="st-hero__copy">
-          <p className="st-label st-label--rule" style={{ margin: 0 }}>{HERO.eyebrow}</p>
           <Image
             src={wordmark}
             alt="DAINEKU — Real-Time Simulation & Spatial Design"
@@ -41,7 +40,7 @@ export default function StudioHero() {
 
       <div className="st-hero__meta">
         <div className="st-container st-hero__meta-row">
-          <ul className="st-hero__disciplines" aria-label="Disciplines">
+          <ul className="st-hero__disciplines" aria-label="Focus areas">
             {HERO.disciplines.map((d, i) => (
               <li key={d}>
                 <span className="st-num">{String(i + 1).padStart(2, '0')}</span>

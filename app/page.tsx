@@ -1,11 +1,8 @@
 import type { Metadata } from 'next'
 import StudioHero from '@/components/studio/StudioHero'
 import StudioServices from '@/components/studio/StudioServices'
-import WhyDaineku from '@/components/studio/WhyDaineku'
 import SelectedWork from '@/components/studio/SelectedWork'
-import TechnicalProduction from '@/components/studio/TechnicalProduction'
 import JournalSection from '@/components/studio/JournalSection'
-import StudioAbout from '@/components/studio/StudioAbout'
 import ProcessSection from '@/components/studio/ProcessSection'
 import StudioContact from '@/components/studio/StudioContact'
 import Reveal from '@/components/studio/Reveal'
@@ -19,7 +16,7 @@ import { getContactEmail, getSocialLinks } from '@/lib/social'
 // site_settings still apply to the archive pages, but never to the studio homepage.
 const TITLE = 'DAINEKU — Real-Time Simulation & Spatial Design Studio'
 const DESCRIPTION =
-  'DAINEKU is an independent development studio creating real-time simulations, digital environments, interactive experiences and cinematic video production.'
+  'DAINEKU develops real-time simulation, interactive 3D environments and cinematic visuals. Its racing game The Kanjo runs its own vehicle simulation, AI traffic, steering-wheel force feedback and night lighting.'
 const OG_IMAGE = { url: '/images/brand/og.jpg', width: 1200, height: 630, alt: 'DAINEKU — a city at dusk, half wireframe, half finished' }
 
 export const metadata: Metadata = {
@@ -56,7 +53,7 @@ export default async function Home() {
     url: `${baseUrl}/`,
     logo: `${baseUrl}/images/brand/logo.png`,
     description: DESCRIPTION,
-    knowsAbout: ['Real-time simulation', 'Interactive prototyping', 'Digital environments', 'Spatial visualisation', 'Cinematic and video production'],
+    knowsAbout: ['Real-time simulation', 'Vehicle dynamics', 'AI traffic simulation', 'Interactive 3D environments', 'Real-time lighting and rendering', 'Cinematic video production'],
     ...(email ? { email } : {}),
     ...(socials.length ? { sameAs: socials.map(s => s.href) } : {}),
   }
@@ -69,11 +66,8 @@ export default async function Home() {
       />
       <StudioHero />
       <StudioServices />
-      <WhyDaineku />
       <SelectedWork />
-      <TechnicalProduction />
       <JournalSection articles={articles} />
-      <StudioAbout />
       <ProcessSection />
       <StudioContact email={email} delivery={delivery} socials={socials} />
       <Reveal />
