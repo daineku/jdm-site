@@ -911,19 +911,35 @@ Admin → **Archive Feed** (was "Homepage") curates `/archive`. Data model uncha
 
 ### Studio files
 
-- `components/studio/content.ts` — all homepage copy. No invented clients, metrics or awards; The Kanjo is an own project *in development*.
+- `components/studio/content.ts` — homepage copy (hero, services, Journal labels, contact). No invented clients, metrics or awards. **Project copy lives in `lib/projects.ts`** (see *Projects* below).
 - `components/studio/studio.css` — design system, every rule scoped under `.studio` / `st-*`. The `.studio a` reset uses `:where()` (zero specificity) so it beats the legacy global `a { color: #39FF14 }` by source order without overriding component classes.
-- `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `Cover` (whole image, framed by object-position only, separate desktop/mobile positions), `SectionHeading`, `SectionDivider`, `delay()`.
+- `components/studio/primitives.tsx` — `Crop` (fixed source-pixel region of an image; annotation pins depend on it), `Cover` (whole image, framed by object-position only), **`ArtDirectedCover`** (desktop master + optional phone crop through `getImageProps` + `<picture>`; the frame's CSS aspect-ratio must equal the master's so `object-fit: cover` never scales or cuts), `SectionHeading`, `SectionDivider`, `delay()`.
 - `components/studio/visuals.tsx` — `SimulationDiagram` (the services card's vehicle-path figure). Decorative.
-- Homepage order (`app/page.tsx`): Hero → `StudioServices` (What We Build) → `SelectedWork` (The Kanjo + Developed systems) → `JournalSection` (hidden with no published article) → `ProcessSection` → `StudioContact`. Why Daineku, Technical Production and Studio were removed in v10.3 as repetition.
+- Homepage order (`app/page.tsx`): Hero → `StudioServices` (What We Build) → `ProjectsSection` (The Kanjo case study; Support module when placed "project") → `JournalSection` (hidden with no published article) → `SupportModule` (only when placed "home") → `StudioContact`. Why Daineku, Technical Production, Studio and Process were removed (v10.3 / v11) as repetition.
 - `components/studio/Reveal.tsx` — one IntersectionObserver for `[data-reveal]`. Content is visible in server HTML; the hidden state is armed only after mount and never under `prefers-reduced-motion`.
+
+### Projects — portfolio data model (v11)
+
+`lib/projects.ts` is the portfolio: a typed `Project[]` (title, tagline, summary, disciplines, status + one `statusLabel`, cover `{ desktop, mobile?, alt }` as **static image imports**, four `highlights`, optional `gallery`/`video`/`link`, `featured`, `order`, `visible`). `components/studio/ProjectsSection.tsx` lays out the featured project as the case study — title row, the artwork across the whole content column at its *own* aspect ratio, then copy beside the 2 × 2 highlights — and renders any further visible projects as `.st-projects__grid` cards. With one project the grid is not rendered at all, so nothing looks empty. Adding a project = one entry + its artwork; no layout change. Real projects only; `npm run test:projects` enforces the invariants (unique slugs, one featured, ≥ 2592 px desktop cover, no per-system status words).
+
+**Project artwork pipeline.** `npm run media:project -- <source> [--name <base>] [--mobile-focus 0.68] [--mobile-aspect 1.25]` (`scripts/prepare-project-media.mjs`) writes `public/images/projects/<base>.jpg` (full composition, 2592 px = 2 × the 1296 px content column, JPEG q94 **4:4:4**, Lanczos, no sharpening), `<base>-mobile.jpg` (full-height 5:4 window centred on the subject, 1560 px) and `<base>.json` (source sha256 + what was generated). The optimizer re-encodes per width — AVIF first (`images.formats` in `next.config.ts`, 4:4:4), WebP fallback — at `quality 85`. **Do not** commit a pre-squeezed WebP as the master again: the v10 `thekanjo-hero.webp` (2560 px, q80, 4:2:0) was re-encoded to WebP q75 and then enlarged 1.2–1.5× on every display because its `sizes` ignored the `object-fit: cover` scale of a 16:11 frame — that was the "pixelated hero".
+
+The Kanjo's source is `daineku/kanjo` → `public/media/hero/hero.png` (6336×2688, sha256 `006fc676…0499378`; the Kanjo site's own approved hero). It is an upscaled render: measured detail tops out around 2500–3200 px wide (PSNR of a 2560 px round trip is 39 dB, 3168 px 40 dB), so 2592 px is the honest master size and nothing above it would look sharper. Never hotlink GitHub; regenerate from the file.
 
 ### Brand assets — `public/images/brand/`
 
 `logo.png`, `title.png`, `hero.png`, `divider.png` are the originals (moved from `components/`). `logo-mark.png`, `title-wordmark.png`, `divider-line.png` are the same pixels with transparent padding trimmed. `og.jpg` is a 1200×630 crop of `hero.png`.
-The divider's green line is low-contrast on near-black — it is placed on the ivory band (Process) and once in the footer.
+The divider's green line is low-contrast on near-black — it is used once, in the footer.
 
-`public/images/projects/thekanjo-hero.webp` is **The Kanjo's own hero artwork**, not a DAINEKU brand image: source `daineku/kanjo` → `public/media/hero/hero.png` (6336×2688 PNG, 18.2 MB, sha256 `006fc676…0499378`), resized with Sharp to 2560×1086 WebP q80 (190 KB); next/image serves sized variants from it. Framing is object-position only (`70% 58%` desktop, `72% 50%` mobile — the source's own phone framing); the red car sits at x 47–88 % of the frame. To refresh it, regenerate from the Kanjo repository's file — never hotlink GitHub.
+`public/images/projects/` holds **project artwork, not brand images** (The Kanjo's masters — see *Projects* above for the pipeline and provenance).
+
+### Support module (Patreon) — v11, optional, off by default
+
+A native DAINEKU block (`components/studio/SupportModule.tsx`) that invites visitors to support a project on Patreon: label ("Support The Kanjo" / "Support the studio"), title, what supporters are funding, one CTA to the configured page (`target=_blank rel=noopener noreferrer`), and artwork — the owner's upload or, with a project association, the project's own cover. **No Patreon script, iframe or oEmbed is loaded**: Patreon has no official embed for creator pages (docs.patreon.com covers OAuth/API/webhooks; post embeds run through Embed.ly in the other direction; the old "Become a patron" button is a third-party script), and patreon.com refuses framing. If that changes, add an `embed` mode next to the native one — never arbitrary HTML.
+
+Configuration (`lib/support.ts` → `resolveSupport`), in precedence order: **(1)** `site_settings` columns from `supabase/migration_v11a_support_module.sql` (additive, re-runnable; `support_enabled`, `support_url`, `support_title`, `support_body`, `support_cta`, `support_image_url` + `_alt`, `support_project` = slug from `lib/projects.ts`, `support_placement` = `project` | `home`) — once the row carries them they are the only authority, including "off"; **(2)** otherwise env `PATREON_URL` (+ `SUPPORT_TITLE/BODY/CTA/PROJECT/PLACEMENT/IMAGE_URL/IMAGE_ALT`). The URL must be an https creator page on `patreon.com` with no query/fragment/credentials (`isSupportUrl`; the Zod schema, the admin and the table check all enforce it). Defaults state no tiers, prices or benefits (unit test).
+
+Admin → **Site Settings → Support module (Patreon)**: toggle, URL, project, title, button label, placement, image upload (R2 folder `support/`, capped at 2400 px) + alt, description. The section is read-only until migration v11a is applied, and the settings PUT only includes `support_*` when the loaded row has the columns — saving the rest of the settings can never fail on an un-migrated database.
 
 ### Fonts
 
@@ -978,7 +994,9 @@ Endpoint guards (`app/api/contact/route.ts`): JSON only, 16 KB cap, same-origin 
 
 **Validation** (`lib/validation/journal.ts`, strict Zod — unknown fields rejected): limits mirror the table constraints; covers must live on `R2_PUBLIC_URL`; publishing needs an excerpt and a body; a cover needs alt text. First publication stamps `published_at`; unpublishing keeps it.
 
-**Rendering:** `components/studio/ArticleBody.tsx` — `react-markdown` + `remark-gfm`, `skipHtml` (raw HTML is dropped, so no `<script>`/`<iframe>`), default URL transform (no `javascript:`), images HTTPS-only, body headings start at h2. Public pages and the sitemap are `force-dynamic`, so a save is live immediately — no deploy and no revalidation step. The homepage shows up to three: featured first (in admin order), then newest.
+**Rendering:** `components/studio/ArticleBody.tsx` — `react-markdown` + `remark-gfm`, `skipHtml` (raw HTML is dropped, so no `<script>`/`<iframe>`), default URL transform (no `javascript:`), images HTTPS-only, body headings start at h2. Public pages, the feed and the sitemap are `force-dynamic`, so a save is live immediately — no deploy and no revalidation step.
+
+**Editorial layout (v11)** — `components/studio/Editorial.tsx`: `FeaturedStory` (large 16:10 cover, category + date, title, excerpt, "Read the story") and `LatestList` (compact rows: 4:3 thumb, meta, title, two-line excerpt). Homepage (`JournalSection`): the first article in editorial order (`editorialOrder`: featured in admin order, then newest) is the featured story, the next three are "Latest updates"; the section is absent with no published article and never shows a placeholder. `/journal`: lead story + `JournalCards` grid for the rest, `Blog` JSON-LD, and a link to **`/journal/feed.xml`** (RSS 2.0, `app/journal/feed.xml/route.ts`, advertised with `<link rel="alternate">` on `/` and `/journal`). Covers are plain `<img>` in fixed-ratio frames (any R2 host; no layout shift); Journal uploads are capped at 2400 px wide in `upload-asset`. Journal reads are wrapped in React `cache()` so page + metadata + sitemap share one query per request; `getSiteSettings` likewise.
 
 Client components import Journal types and helpers from `lib/journalShared.ts`, never `lib/journal.ts` — the latter imports the Supabase client and must stay out of browser bundles.
 
@@ -1003,8 +1021,11 @@ The legacy archive tables pre-date this work and run with RLS disabled (see `mig
 | `npm run test:description` | 13 passed |
 | `npm run test:contact` | 8 passed — enquiry validation (`lib/contact.test.ts`, Node test runner) |
 | `npm run test:journal` | 6 passed — article validation and slugs (`lib/journal.test.ts`) |
+| `npm run test:projects` | 4 passed — portfolio data invariants (`lib/projects.test.ts`; image imports are stubbed through a loader hook) |
+| `npm run test:support` | 5 passed — Support module URL allowlist, precedence and defaults (`lib/support.test.ts`) |
+| `npm run test:unit` | all four unit suites together |
 | `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
-| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 63 passed, 11 skipped by design |
+| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 69 passed, 15 skipped by design. `tests/mock-backend.mjs` now also serves `site_settings` (Support module tests PATCH it) |
 
 - `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
 - Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.

@@ -141,6 +141,16 @@ export type SiteSettings = {
   ga4_measurement_id: string | null
   search_console_verification: string | null
   favicon_url: string | null
+  // Support module (migration_v11a) — optional: the columns exist only once that migration has run.
+  support_enabled?: boolean | null
+  support_url?: string | null
+  support_title?: string | null
+  support_body?: string | null
+  support_cta?: string | null
+  support_image_url?: string | null
+  support_image_alt?: string | null
+  support_project?: string | null
+  support_placement?: string | null
   updated_at: string
 }
 

@@ -1,10 +1,13 @@
+import { cache } from 'react'
 import { supabase } from './supabase'
 import type { Model, GalleryPhoto, Brand, SiteSettings, PublicBuildInstance, Accessory } from './types'
 
-export async function getSiteSettings(): Promise<SiteSettings | null> {
+// Request-cached: the root layout (twice — metadata and body) and the page each ask for the
+// settings row; React's cache() turns that into one query per request.
+export const getSiteSettings = cache(async (): Promise<SiteSettings | null> => {
   const { data } = await supabase.from('site_settings').select('*').single()
   return data
-}
+})
 
 export async function getBrands(): Promise<Brand[]> {
   const { data } = await supabase

@@ -44,10 +44,15 @@ export async function POST(req: NextRequest) {
   const key = `${type}/${ts}.jpg`
 
   try {
-    // Optimize with sharp: orient, compress for web, no watermark, preserve dimensions
+    // Optimize with sharp: orient, compress for web, no watermark, preserve dimensions.
+    // Editorial covers and the Support module image are served to visitors as plain <img>
+    // (no optimizer), so they are capped at 2400 px wide here — a 16:10 cover at that size is
+    // still 2× the widest frame on the site. Other asset types keep their dimensions.
     const sharp = (await import('sharp')).default
+    const capped = type === 'journal' || type === 'support'
     const optimized = await sharp(rawBuffer)
       .rotate()   // normalize EXIF orientation
+      .resize(capped ? { width: 2400, withoutEnlargement: true } : undefined)
       .jpeg({ quality: 88, progressive: true })
       .toBuffer()
 

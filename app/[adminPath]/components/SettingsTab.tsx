@@ -1,7 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { s, Field, api, useToast, MUTED, errorMessage } from './ui'
+import { s, Field, Toggle, api, useToast, MUTED, errorMessage } from './ui'
 import { ImageUploadField } from './ImageUploadField'
+import { PROJECT_INDEX } from '@/lib/projects'
+import { SUPPORT_DEFAULTS, SUPPORT_LIMITS, isSupportUrl } from '@/lib/support'
 
 type Settings = {
   id: string
@@ -16,7 +18,20 @@ type Settings = {
   default_og_image: string | null
   ga4_measurement_id: string | null
   search_console_verification: string | null
+  // Support module (migration_v11a). Present on the row only once that migration has run.
+  support_enabled?: boolean | null
+  support_url?: string | null
+  support_title?: string | null
+  support_body?: string | null
+  support_cta?: string | null
+  support_image_url?: string | null
+  support_image_alt?: string | null
+  support_project?: string | null
+  support_placement?: 'project' | 'home' | null
 }
+
+/** The row carries the Support columns only after migration_v11a; without them the section is read-only. */
+const hasSupportColumns = (row: Settings) => 'support_enabled' in row
 
 export function SettingsTab({ adminSecret }: { adminSecret: string }) {
   const [form, setForm] = useState<Settings | null>(null)
@@ -48,8 +63,14 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
     const l = [...form.nav_links]; l[i] = { ...l[i], [k]: v }; set('nav_links', l)
   }
 
+  const supportReady = hasSupportColumns(form)
+  const supportUrlProblem = form.support_url && !isSupportUrl(form.support_url)
+    ? 'Must be a creator page on patreon.com, e.g. https://www.patreon.com/your-page (no query string)'
+    : form.support_enabled && !form.support_url ? 'Enabled, but no Patreon page is set — nothing will be shown until it is' : ''
+
   const save = async () => {
     if (!form.site_title.trim()) { show('Site title is required', 'error'); return }
+    if (supportReady && form.support_url && !isSupportUrl(form.support_url)) { show('Support URL must be a patreon.com creator page', 'error'); return }
     setSaving(true)
     try {
       await api('settings', 'PUT', {
@@ -65,6 +86,18 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
         default_og_image: form.default_og_image || null,
         ga4_measurement_id: form.ga4_measurement_id || null,
         search_console_verification: form.search_console_verification || null,
+        // Only sent when the columns exist, so saving never fails on a database without migration_v11a.
+        ...(supportReady ? {
+          support_enabled: !!form.support_enabled,
+          support_url: form.support_url?.trim() || null,
+          support_title: form.support_title?.trim() || null,
+          support_body: form.support_body?.trim() || null,
+          support_cta: form.support_cta?.trim() || null,
+          support_image_url: form.support_image_url || null,
+          support_image_alt: form.support_image_alt?.trim() || null,
+          support_project: form.support_project || null,
+          support_placement: form.support_placement === 'home' ? 'home' : 'project',
+        } : {}),
       }, adminSecret)
       show('Settings saved')
     } catch (e) { show('Save failed: ' + errorMessage(e), 'error') }
@@ -161,6 +194,70 @@ export function SettingsTab({ adminSecret }: { adminSecret: string }) {
             </p>
           </Field>
         </div>
+      </div>
+
+      {/* ── SUPPORT MODULE (PATREON) ─────────────────────────── */}
+      <p style={{ ...s.secTitle, marginTop: 28 }}>Support module (Patreon)</p>
+      <p style={{ fontSize: 11, color: MUTED, marginBottom: 12 }}>
+        An optional block on the homepage inviting visitors to support a project on Patreon. It is a native, studio-designed
+        block that links to your Patreon page — no Patreon script or iframe is loaded (Patreon offers no official embed for
+        creator pages). Shown only while enabled <em>and</em> a patreon.com page is set. Never describe tiers, prices or
+        benefits that do not exist on the Patreon page itself.
+      </p>
+      <div style={s.card} data-testid="support-settings">
+        {!supportReady ? (
+          <p style={{ fontSize: 11, color: '#c9a227', margin: 0 }}>
+            Not available yet: apply <code style={{ fontSize: 10 }}>supabase/migration_v11a_support_module.sql</code> in Supabase, then reload.
+            Until then the module can only be configured through the <code style={{ fontSize: 10 }}>PATREON_URL</code> environment variable.
+          </p>
+        ) : (
+          <>
+            <div style={{ ...s.row, marginBottom: 14 }}>
+              <Toggle value={!!form.support_enabled} onChange={v => set('support_enabled', v)} />
+              <span style={{ fontSize: 11, color: form.support_enabled ? '#39FF14' : MUTED }}>{form.support_enabled ? 'Enabled — shown on the site' : 'Disabled — nothing is shown'}</span>
+            </div>
+            <div style={s.g2}>
+              <Field label="Patreon page URL">
+                <input style={s.input} value={form.support_url || ''} aria-label="Patreon page URL"
+                  onChange={e => set('support_url', e.target.value || null)} placeholder="https://www.patreon.com/your-page" />
+                {supportUrlProblem && <p style={{ fontSize: 10, color: '#e24b4a', marginTop: 3 }}>{supportUrlProblem}</p>}
+              </Field>
+              <Field label="Project (optional — adds the project's artwork and name)">
+                <select style={s.select} value={form.support_project || ''} aria-label="Support project" onChange={e => set('support_project', e.target.value || null)}>
+                  <option value="">The studio in general</option>
+                  {PROJECT_INDEX.map(p => <option key={p.slug} value={p.slug}>{p.title}</option>)}
+                </select>
+              </Field>
+              <Field label={`Title (optional, max ${SUPPORT_LIMITS.title})`}>
+                <input style={s.input} value={form.support_title || ''} maxLength={SUPPORT_LIMITS.title} aria-label="Support title"
+                  onChange={e => set('support_title', e.target.value || null)} placeholder={SUPPORT_DEFAULTS.title} />
+              </Field>
+              <Field label={`Button label (optional, max ${SUPPORT_LIMITS.cta})`}>
+                <input style={s.input} value={form.support_cta || ''} maxLength={SUPPORT_LIMITS.cta} aria-label="Support button label"
+                  onChange={e => set('support_cta', e.target.value || null)} placeholder={SUPPORT_DEFAULTS.cta} />
+              </Field>
+              <Field label="Placement">
+                <select style={s.select} value={form.support_placement === 'home' ? 'home' : 'project'} aria-label="Support placement" onChange={e => set('support_placement', e.target.value === 'home' ? 'home' : 'project')}>
+                  <option value="project">Under the project case study</option>
+                  <option value="home">Own section, after the Journal</option>
+                </select>
+              </Field>
+              <div>
+                <ImageUploadField label="Image (optional — otherwise the project's own artwork is used)" value={form.support_image_url ?? null}
+                  onChange={v => set('support_image_url', v)} adminSecret={adminSecret} uploadType="support" hint="5:4 works best. JPEG, PNG or WebP, up to 4 MB." />
+                {form.support_image_url && (
+                  <input style={{ ...s.input, marginTop: 6 }} value={form.support_image_alt || ''} maxLength={SUPPORT_LIMITS.imageAlt} aria-label="Support image alt text"
+                    onChange={e => set('support_image_alt', e.target.value || null)} placeholder="Describe the image (alt text)" />
+                )}
+              </div>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <label style={s.label}>What supporters are funding (optional, max {SUPPORT_LIMITS.body})</label>
+              <textarea style={{ ...s.textarea, minHeight: 56 }} value={form.support_body || ''} maxLength={SUPPORT_LIMITS.body} aria-label="Support description"
+                onChange={e => set('support_body', e.target.value || null)} placeholder={SUPPORT_DEFAULTS.body} />
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ marginTop: 20, textAlign: 'right' as const }}>

@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import StudioHero from '@/components/studio/StudioHero'
 import StudioServices from '@/components/studio/StudioServices'
-import SelectedWork from '@/components/studio/SelectedWork'
+import ProjectsSection from '@/components/studio/ProjectsSection'
 import JournalSection from '@/components/studio/JournalSection'
+import SupportModule from '@/components/studio/SupportModule'
 import StudioContact from '@/components/studio/StudioContact'
 import Reveal from '@/components/studio/Reveal'
 import { getSiteSettings } from '@/lib/data'
@@ -10,6 +11,7 @@ import { getHomepageArticles } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
 import { isDeliveryConfigured } from '@/lib/contactDelivery'
 import { getSocialLinks } from '@/lib/social'
+import { resolveSupport } from '@/lib/support'
 
 // Studio positioning is fixed here on purpose: the legacy JDM SEO defaults in
 // site_settings still apply to the archive pages, but never to the studio homepage.
@@ -21,7 +23,7 @@ const OG_IMAGE = { url: '/images/brand/og.jpg', width: 1200, height: 630, alt: '
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
-  alternates: { canonical: '/' },
+  alternates: { canonical: '/', types: { 'application/rss+xml': '/journal/feed.xml' } },
   openGraph: {
     type: 'website',
     url: '/',
@@ -39,9 +41,11 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
-  const [settings, articles] = await Promise.all([getSiteSettings(), getHomepageArticles(3)])
+  // getSiteSettings is request-cached: the layout already fetched it, so this is free.
+  const [settings, articles] = await Promise.all([getSiteSettings(), getHomepageArticles(4)])
   const socials = getSocialLinks(settings)
   const deliveryReady = isDeliveryConfigured()
+  const support = resolveSupport(settings)
   const baseUrl = getBaseUrl()
 
   const jsonLd = {
@@ -63,8 +67,9 @@ export default async function Home() {
       />
       <StudioHero />
       <StudioServices />
-      <SelectedWork />
+      <ProjectsSection support={support} />
       <JournalSection articles={articles} />
+      {support?.placement === 'home' && <SupportModule config={support} variant="home" />}
       <StudioContact deliveryReady={deliveryReady} socials={socials} />
       <Reveal />
     </main>

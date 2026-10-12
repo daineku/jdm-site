@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { supabase } from './supabase'
 import type { Article, ArticleCard } from './journalShared'
 
@@ -11,6 +12,9 @@ export { formatArticleDate } from './journalShared'
  *
  * If the table does not exist yet (migration not applied), every read returns empty
  * and the Journal stays hidden — the rest of the site is unaffected.
+ *
+ * Reads are wrapped in React's per-request cache: the homepage, its metadata and the
+ * sitemap can each ask for the list and only one query is made per request.
  */
 
 const CARD_COLUMNS = 'id, slug, title, excerpt, category, cover_image_url, cover_alt, is_featured, sort_order, published_at'
@@ -25,7 +29,7 @@ function report(error: { message?: string; code?: string } | null) {
 }
 
 /** All published articles, newest first. */
-export async function getPublishedArticles(): Promise<ArticleCard[]> {
+export const getPublishedArticles = cache(async (): Promise<ArticleCard[]> => {
   const { data, error } = await supabase
     .from(TABLE)
     .select(CARD_COLUMNS)
@@ -35,20 +39,24 @@ export async function getPublishedArticles(): Promise<ArticleCard[]> {
     .limit(200)
   report(error)
   return (data as ArticleCard[] | null) ?? []
+})
+
+/** Featured articles first, in the order set in the admin, then the most recent of the rest. */
+export function editorialOrder(all: ArticleCard[]): ArticleCard[] {
+  const featured = all.filter(a => a.is_featured).sort((a, b) => a.sort_order - b.sort_order)
+  const rest = all.filter(a => !a.is_featured)
+  return [...featured, ...rest]
 }
 
 /**
- * Up to `limit` articles for the homepage: featured ones first, in the order set in the
- * admin, then the most recent of the rest.
+ * Up to `limit` articles for the homepage: the first is the featured story, the rest the
+ * "latest" list. Four by default — one lead plus three supporting pieces.
  */
-export async function getHomepageArticles(limit = 3): Promise<ArticleCard[]> {
-  const all = await getPublishedArticles()
-  const featured = all.filter(a => a.is_featured).sort((a, b) => a.sort_order - b.sort_order)
-  const rest = all.filter(a => !a.is_featured)
-  return [...featured, ...rest].slice(0, limit)
+export async function getHomepageArticles(limit = 4): Promise<ArticleCard[]> {
+  return editorialOrder(await getPublishedArticles()).slice(0, limit)
 }
 
-export async function getPublishedArticle(slug: string): Promise<Article | null> {
+export const getPublishedArticle = cache(async (slug: string): Promise<Article | null> => {
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length > 120) return null
   const { data, error } = await supabase
     .from(TABLE)
@@ -59,4 +67,4 @@ export async function getPublishedArticle(slug: string): Promise<Article | null>
     .maybeSingle()
   report(error)
   return (data as Article | null) ?? null
-}
+})

@@ -94,9 +94,10 @@ test.describe('studio content', () => {
 
   test('section headings follow the agreed structure, in order', async ({ page }) => {
     await page.goto('/')
-    // The Journal section appears only while an article is published (journal tests may run in parallel).
-    const h2 = (await page.locator('h2').allTextContents()).filter(t => t !== 'Inside the Process.')
-    expect(h2).toEqual(['What We Build', 'The Kanjo', "Let's Build Something."])
+    // The Journal section and the Support module appear only while content is published / enabled
+    // (journal and support tests may run in parallel).
+    const h2 = (await page.locator('h2').allTextContents()).filter(t => t !== 'Inside the Process.' && t !== 'All articles' && !/support/i.test(t))
+    expect(h2).toEqual(['What We Build', 'The Kanjo', 'Bring Your Next Project to Life.'])
     for (const gone of ['Production Capabilities', 'One World. Many Systems.', 'What The Kanjo Demonstrates.',
       'Built to Work. Designed to Feel Real.', 'Independent by Design.', 'A City Built to Move.']) {
       await expect(page.getByRole('heading', { name: gone })).toHaveCount(0)
@@ -105,36 +106,50 @@ test.describe('studio content', () => {
     await expect(page.locator('main')).not.toContainText(/Interior emissive|Concrete · glass/)
   })
 
-  test('The Kanjo case study shows the real project artwork, not a crop of the studio key visual', async ({ page }) => {
+  test('The Kanjo case study shows the real project artwork at full composition, never enlarged on screen', async ({ page, isMobile }) => {
     await page.goto('/')
     const work = page.locator('#work')
-    await expect(work.getByRole('heading', { name: 'Highway racing, simulated in real time.' })).toBeVisible()
+    await expect(work.getByRole('heading', { level: 2, name: 'The Kanjo' })).toBeVisible()
+    await expect(work).toContainText('Highway racing, simulated in real time.')
     await expect(work).toContainText('Original project')
     await expect(work).toContainText('In development')
-    const img = work.locator('img')
+    const img = work.locator('.st-project__frame img')
     await expect(img).toHaveCount(1)
     await expect(img).toHaveAttribute('alt', /red hatchback.*expressway at night/i)
+    // Art direction: a phone crop and the desktop master, both from the project's own artwork.
+    await expect(work.locator('.st-project__frame picture source')).toHaveAttribute('srcset', /thekanjo-hero-mobile/)
     await img.scrollIntoViewIfNeeded()
     await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true)
-    expect(await img.evaluate((i: HTMLImageElement) => i.currentSrc)).toMatch(/thekanjo-hero/)
-    expect(await img.evaluate((i: HTMLImageElement) => i.currentSrc)).not.toMatch(/brand%2Fhero|brand\/hero/)
-    // The car must stay in frame: object-fit cover, positioned right of centre.
-    expect(await img.evaluate(i => getComputedStyle(i).objectFit)).toBe('cover')
-    expect(await img.evaluate(i => getComputedStyle(i).objectPosition)).toMatch(/^7\d% /)
+    const src = await img.evaluate((i: HTMLImageElement) => i.currentSrc)
+    expect(src).toMatch(isMobile ? /thekanjo-hero-mobile/ : /thekanjo-hero\.[a-f0-9]+\.jpg/)
+    expect(src).not.toMatch(/brand%2Fhero|brand\/hero/)
+    // The frame has the master's own aspect ratio, so cover neither crops nor scales it.
+    const fit = await img.evaluate((i: HTMLImageElement) => {
+      const r = i.getBoundingClientRect()
+      const drawn = Math.max(r.width, r.height * (i.naturalWidth / i.naturalHeight)) * devicePixelRatio
+      return { objectFit: getComputedStyle(i).objectFit, cssW: r.width, cssH: r.height, ratio: r.width / r.height, drawnDevicePx: drawn,
+        delivered: Number(new URL(i.currentSrc).searchParams.get('w')) }
+    })
+    expect(fit.objectFit).toBe('cover')
+    expect(fit.ratio).toBeCloseTo(isMobile ? 1560 / 1248 : 2592 / 1100, 1)
+    // The delivered candidate is at least as wide as the drawn device pixels: no upscaling of the artwork.
+    expect(fit.delivered).toBeGreaterThanOrEqual(Math.floor(fit.drawnDevicePx * 0.98))
   })
 
   test('The Kanjo shows only one project-level development label', async ({ page }) => {
     await page.goto('/')
     const work = page.locator('#work')
-    await expect(work.locator('.st-frame-tag--br')).toHaveText('In development')
+    await expect(work.locator('.st-project__frame .st-frame-tag--br')).toHaveText('In development')
     await expect(work.locator('.st-status')).toHaveCount(0)
     await expect(work.locator('.st-facts')).toHaveCount(0)
     await expect(page.locator('main')).not.toContainText(/Unity 6|Three services/)
+    // No empty grid for "more projects" while only one project exists.
+    await expect(work.locator('.st-projects__grid')).toHaveCount(0)
   })
 
   test('the technical summary is concise, grounded and free of individual statuses', async ({ page }) => {
     await page.goto('/')
-    const systems = page.locator('#work .st-systems')
+    const systems = page.locator('#work .st-project__systems')
     await expect(systems.getByRole('heading', { level: 3, name: 'Inside the simulation' })).toBeVisible()
     await expect(systems.locator('h4')).toHaveText([
       'Vehicle Physics', 'Traffic & Racing AI', 'Wheel & Instrumentation', 'World & Rendering',
@@ -143,6 +158,19 @@ test.describe('studio content', () => {
     await expect(systems.locator('.st-status, .st-deliverables')).toHaveCount(0)
     await expect(systems).toContainText('MOZA R3')
     await expect(systems.locator('a')).toHaveCount(0)
+  })
+
+  test('the Journal feed is advertised and valid RSS; it lists only published articles', async ({ page, request }) => {
+    await page.goto('/')
+    expect(await page.locator('link[rel="alternate"][type="application/rss+xml"]').getAttribute('href')).toMatch(/\/journal\/feed\.xml$/)
+    const res = await request.get('/journal/feed.xml')
+    expect(res.status()).toBe(200)
+    expect(res.headers()['content-type']).toMatch(/application\/rss\+xml/)
+    const xml = await res.text()
+    expect(xml).toMatch(/^<\?xml version="1.0" encoding="UTF-8"\?>\s*<rss version="2.0"/)
+    expect(xml).toContain('<title>DAINEKU Journal</title>')
+    expect(xml).toContain('rel="self"')
+    expect(xml).not.toMatch(/<script/i)
   })
 
   test('The Kanjo is linked exactly once, from the case study, as an external CTA', async ({ page }) => {
@@ -165,7 +193,7 @@ test.describe('studio content', () => {
   test('the studio homepage carries no JDM branding; the archive stays reachable from the footer', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('main')).not.toContainText(/\bJDM\b/)
-    await expect(page.locator('header')).not.toContainText(/\bJDM\b/)
+    await expect(page.locator('header.st-header')).not.toContainText(/\bJDM\b/)
     await expect(page.locator('footer').getByRole('link', { name: 'Car archive' })).toHaveAttribute('href', '/archive')
   })
 
@@ -226,7 +254,7 @@ test.describe('project enquiry', () => {
     page.on('request', r => { if (r.url().endsWith('/api/contact')) posts.push(r.url()) })
     await page.goto('/#contact')
     const form = page.locator('form.st-form')
-    await form.getByRole('button', { name: /discuss a project/i }).click()
+    await form.getByRole('button', { name: /send project enquiry/i }).click()
     await expect(form.locator('.st-field__error')).toHaveCount(4)
     await expect(form.getByLabel('Name')).toBeFocused()
     await expect(form.locator('[aria-invalid="true"]')).toHaveCount(4)
@@ -238,7 +266,7 @@ test.describe('project enquiry', () => {
     const name = `Smoke Client ${Date.now()}`
     await page.goto('/#contact')
     await fillValid(page, name)
-    await page.locator('form.st-form').getByRole('button', { name: /discuss a project/i }).click()
+    await page.locator('form.st-form').getByRole('button', { name: /send project enquiry/i }).click()
     await expect(page.locator('[data-status="sent"]')).toBeVisible()
     await expect(page.locator('form.st-form').getByLabel('Name')).toHaveValue('')
 
@@ -256,7 +284,7 @@ test.describe('project enquiry', () => {
     await page.setExtraHTTPHeaders({ 'x-real-ip': ip() })
     await page.goto('/#contact')
     await fillValid(page, `PROVIDER-FAIL ${Date.now()}`)
-    await page.locator('form.st-form').getByRole('button', { name: /discuss a project/i }).click()
+    await page.locator('form.st-form').getByRole('button', { name: /send project enquiry/i }).click()
     await expect(page.locator('[data-status="error"]')).toContainText(/could not be sent/i)
     await expect(page.locator('[data-status="sent"]')).toHaveCount(0)
   })
@@ -360,7 +388,7 @@ test.describe('journal', () => {
       '- Reflection probes', '- Lamp bloom', '', '[The Kanjo](https://www.thekanjo.com/)', '',
       '<script>window.__xss = 1</script>', '', '[click me](javascript:window.__xss=2)',
     ].join('\n'))
-    await page.locator('input[type="file"]').setInputFiles('public/images/projects/thekanjo-hero.webp')
+    await page.locator('input[type="file"]').setInputFiles('public/images/projects/thekanjo-hero-mobile.jpg')
     const coverPreview = page.locator('img[alt="preview"]')
     await expect(coverPreview).toBeVisible()
     expect(await coverPreview.getAttribute('src')).toMatch(new RegExp(`^${process.env.MOCK_BACKEND_URL}/media/journal/`))
@@ -391,7 +419,8 @@ test.describe('journal', () => {
     await expect(page.getByText('Published', { exact: true }).first()).toBeVisible()
 
     await page.goto('/journal')
-    const card = page.locator('.st-journal__card').filter({ hasText: title })
+    // The first article is the lead story; any others are cards.
+    const card = page.locator('.st-story, .st-journal__card').filter({ hasText: title })
     await expect(card).toHaveCount(1)
     await expect(card).toContainText('Lighting')
     await expect(card.locator('time')).toHaveText(new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' }).format(new Date()))
@@ -418,9 +447,16 @@ test.describe('journal', () => {
     const home = page.locator('section#journal')
     await expect(home.getByRole('heading', { level: 2 })).toHaveText('Inside the Process.')
     await expect(home.getByRole('link', { name: title })).toHaveAttribute('href', `/journal/${slug}`)
-    await expect(home.locator('.st-journal__card')).toHaveCount(1)
+    // One article → the featured story alone; no "latest" list and no empty placeholders.
+    await expect(home.locator('.st-story')).toHaveCount(1)
+    await expect(home.locator('.st-story')).toContainText('Featured story')
+    await expect(home.locator('.st-story-row, .st-journal__card')).toHaveCount(0)
+    await expect(home.locator('.st-story img')).toHaveAttribute('loading', 'lazy')
 
     expect(await (await request.get('/sitemap.xml')).text()).toContain(`/journal/${slug}`)
+    const feed = await (await request.get('/journal/feed.xml')).text()
+    expect(feed).toContain(`/journal/${slug}</link>`)
+    expect(feed).toContain(`<category>Lighting</category>`)
   })
 
   test('admin: an edit is live immediately; the media library re-uses an uploaded cover', async ({ page }) => {
@@ -441,7 +477,7 @@ test.describe('journal', () => {
     await expect(page.getByText('Saved')).toBeVisible()
 
     await page.goto('/journal')
-    await expect(page.locator('.st-journal__card').filter({ hasText: title })).toContainText('Updated excerpt')
+    await expect(page.locator('.st-story, .st-journal__card').filter({ hasText: title })).toContainText('Updated excerpt')
   })
 
   test('admin: featured order, unpublish and delete are reflected publicly', async ({ page, request }) => {
@@ -454,10 +490,20 @@ test.describe('journal', () => {
     await request.put('/api/admin/journal', { headers, data: { id: first.id, is_featured: true } })
     await request.put('/api/admin/journal/order', { headers, data: { ids: [second.article.id, first.id] } })
     await page.goto('/')
-    await expect(page.locator('#journal .st-journal__title').first()).toHaveText(`Traffic Notes ${stamp}`)
+    // Two published articles: the first in featured order is the lead story, the other the "latest" list.
+    await expect(page.locator('#journal .st-story .st-journal__title')).toHaveText(`Traffic Notes ${stamp}`)
+    await expect(page.locator('#journal .st-story-row')).toHaveCount(1)
+    await expect(page.locator('#journal .st-story-row .st-journal__title')).toHaveText(title)
+    await expect(page.locator('#journal')).toContainText('Latest updates')
     await request.put('/api/admin/journal/order', { headers, data: { ids: [first.id, second.article.id] } })
     await page.goto('/')
-    await expect(page.locator('#journal .st-journal__title').first()).toHaveText(title)
+    await expect(page.locator('#journal .st-story .st-journal__title')).toHaveText(title)
+    await page.goto('/journal')
+    await expect(page.locator('.st-story .st-journal__title')).toHaveText(title)
+    await expect(page.locator('.st-journal__card')).toHaveCount(1)
+    const ld = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent()) ?? '{}')
+    expect(ld['@type']).toBe('Blog')
+    expect(ld.blogPost).toHaveLength(2)
 
     await openJournalAdmin(page)
     await page.getByTestId('journal-row').filter({ hasText: title }).getByRole('button', { name: 'Edit' }).click()
@@ -473,6 +519,70 @@ test.describe('journal', () => {
     }
     await page.goto('/journal')
     await expect(page.getByText(String(stamp))).toHaveCount(0)
+  })
+})
+
+test.describe('support module (Patreon)', () => {
+  test.describe.configure({ mode: 'serial' })
+  test.skip(({ isMobile }) => isMobile, 'shared settings row: runs once, from the desktop project')
+  const headers = adminHeaders()
+  const PATREON = 'https://www.patreon.com/daineku-smoke'
+  let id = ''
+  const put = (request: Parameters<Parameters<typeof test>[2]>[0]['request'], data: object) =>
+    request.put('/api/admin/settings', { headers, data: { id, site_title: 'DAINEKU', tiktok_url: '', youtube_url: '', instagram_url: '', nav_links: [], ...data } })
+
+  test('disabled by default: no Patreon markup anywhere on the site', async ({ page, request }) => {
+    id = (await (await request.get('/api/admin/settings', { headers })).json()).settings.id
+    await page.goto('/')
+    await expect(page.locator('#support')).toHaveCount(0)
+    expect(await page.content()).not.toMatch(/patreon/i)
+  })
+
+  test('the API accepts only patreon.com creator pages and known placements', async ({ request }) => {
+    expect((await put(request, { support_enabled: true, support_url: 'https://evil.example/daineku' })).status()).toBe(400)
+    expect((await put(request, { support_enabled: true, support_url: 'http://www.patreon.com/daineku' })).status()).toBe(400)
+    expect((await put(request, { support_enabled: true, support_url: 'https://www.patreon.com/daineku?utm=1' })).status()).toBe(400)
+    expect((await put(request, { support_placement: 'sidebar' })).status()).toBe(400)
+    expect((await request.put('/api/admin/settings', { data: { id, support_enabled: true } })).status()).toBe(401)
+  })
+
+  test('enabled under the project: a native block with one external CTA and no third-party code', async ({ page, request }) => {
+    expect((await put(request, { support_enabled: true, support_url: PATREON, support_project: 'thekanjo', support_placement: 'project', support_title: 'Fund the next build', support_body: 'Support goes into the game’s continued development.' })).status()).toBe(200)
+    await page.goto('/')
+    const block = page.locator('#work #support')
+    await expect(block).toHaveCount(1)
+    await expect(block).toContainText('Support The Kanjo')
+    await expect(block.getByRole('heading', { level: 3, name: 'Fund the next build' })).toBeVisible()
+    await expect(block).toContainText('continued development')
+    const cta = block.getByRole('link', { name: /support development/i })
+    await expect(cta).toHaveAttribute('href', PATREON)
+    await expect(cta).toHaveAttribute('target', '_blank')
+    await expect(cta).toHaveAttribute('rel', /noopener/)
+    await expect(page.locator('a[href*="patreon.com"]')).toHaveCount(1)
+    // The project's own artwork stands in for a dedicated image.
+    await expect(block.locator('img')).toHaveAttribute('alt', /red hatchback/i)
+    expect(await page.locator('iframe, script[src*="patreon"]').count()).toBe(0)
+    await expect(page.locator('#journal #support')).toHaveCount(0)
+  })
+
+  test('placement "home" moves it to its own section; disabling removes it entirely', async ({ page, request }) => {
+    expect((await put(request, { support_enabled: true, support_url: PATREON, support_project: '', support_placement: 'home' })).status()).toBe(200)
+    await page.goto('/')
+    await expect(page.locator('#work #support')).toHaveCount(0)
+    const block = page.locator('main > section #support')
+    await expect(block).toHaveCount(1)
+    await expect(block.getByRole('heading', { level: 2 })).toBeVisible()
+    await expect(block).toContainText('Support the studio')
+    await expect(block.locator('img')).toHaveCount(0) // no project, no image → text layout
+
+    expect((await put(request, { support_enabled: false })).status()).toBe(200)
+    await page.goto('/')
+    await expect(page.locator('#support')).toHaveCount(0)
+    expect(await page.content()).not.toMatch(/patreon/i)
+    // The rest of the settings row is untouched.
+    const { settings } = await (await request.get('/api/admin/settings', { headers })).json()
+    expect(settings.site_title).toBe('DAINEKU')
+    expect(settings.support_url).toBe(PATREON)
   })
 })
 
@@ -579,7 +689,7 @@ test.describe('motion', () => {
   test('default motion: below-fold content reveals once scrolled into view', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    const target = page.locator('#work .st-systems [data-reveal]').first()
+    const target = page.locator('#work .st-systems__list [data-reveal]').first()
     await expect(target).not.toHaveClass(/is-in/)
     await target.scrollIntoViewIfNeeded()
     await expect(target).toHaveClass(/is-in/)

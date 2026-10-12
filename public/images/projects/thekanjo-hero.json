@@ -1,0 +1,33 @@
+{
+  "source": {
+    "file": "hero.png",
+    "width": 6336,
+    "height": 2688,
+    "sha256": "006fc6760cb5814afe0cb0373a433f5244bf23f7ef6d435ab4f24248e0499378"
+  },
+  "generated": "2026-10-12",
+  "desktop": {
+    "file": "thekanjo-hero.jpg",
+    "width": 2592,
+    "height": 1100,
+    "bytes": 821845
+  },
+  "mobile": {
+    "file": "thekanjo-hero-mobile.jpg",
+    "width": 1560,
+    "height": 1248,
+    "bytes": 493647,
+    "sourceWindow": {
+      "left": 2628,
+      "top": 0,
+      "width": 3360,
+      "height": 2688
+    }
+  },
+  "encoding": {
+    "quality": 94,
+    "chromaSubsampling": "4:4:4",
+    "mozjpeg": true,
+    "progressive": true
+  }
+}

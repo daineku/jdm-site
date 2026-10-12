@@ -9,6 +9,8 @@
  *                               Emulates the migration's access model: the anon key sees only
  *                               published rows and cannot write; the service key can do anything.
  *                               Unique slug → 409 23505, like Postgres.
+ *   /rest/v1/site_settings    — one configuration row incl. the Support module columns (v11a),
+ *                               readable by anyone, PATCHable with the service key.
  *   /rest/v1/<other table>    — 404 PGRST205, i.e. "no legacy data" (same as no Supabase at all).
  *   /s3/<bucket>/<key>        — PutObject; GET /s3/<bucket>?list-type=2&prefix= — ListObjectsV2.
  *   /media/<key>              — the bucket's public origin (serves uploaded files).
@@ -110,8 +112,44 @@ function validate(row) {
   return null
 }
 
+/**
+ * site_settings — the single configuration row, with the Support module columns of
+ * migration_v11a (disabled by default). Anyone can read it; only the service key can PATCH.
+ */
+const settings = {
+  id: randomUUID(), site_title: 'DAINEKU', logo_url: null, favicon_url: null,
+  tiktok_url: '', youtube_url: '', instagram_url: '', nav_links: [],
+  default_seo_description: null, default_og_image: null, ga4_measurement_id: null, search_console_verification: null,
+  support_enabled: false, support_url: null, support_title: null, support_body: null, support_cta: null,
+  support_image_url: null, support_image_alt: null, support_project: null, support_placement: 'project',
+  updated_at: new Date().toISOString(),
+}
+const SUPPORT_URL_CHECK = /^https:\/\/(www\.)?patreon\.com\/[A-Za-z0-9_./-]{1,120}$/
+
+async function siteSettings(req, res, url) {
+  const service = req.headers.apikey === SERVICE_KEY
+  const params = url.searchParams
+  const wantRows = (req.headers.prefer || '').includes('return=representation')
+  if (req.method === 'GET' || req.method === 'HEAD') return reply(req, res, 200, shape(applyFilters([settings], params), params))
+  if (!service) return json(res, 401, { code: '42501', message: 'permission denied for table site_settings' })
+  if (req.method === 'PATCH') {
+    const patch = JSON.parse((await readBody(req)).toString() || '{}')
+    for (const k of Object.keys(patch)) {
+      if (!(k in settings)) return json(res, 400, { code: '42703', message: `column site_settings.${k} does not exist` })
+    }
+    const next = { ...settings, ...patch }
+    if (next.support_url != null && !SUPPORT_URL_CHECK.test(next.support_url)) return json(res, 400, { code: '23514', message: 'new row violates check constraint "site_settings_support_url_patreon"' })
+    if (!['project', 'home'].includes(next.support_placement)) return json(res, 400, { code: '23514', message: 'new row violates check constraint "site_settings_support_placement"' })
+    if (applyFilters([settings], params).length === 0) return wantRows ? reply(req, res, 200, []) : json(res, 204)
+    Object.assign(settings, next, { updated_at: new Date().toISOString() })
+    return wantRows ? reply(req, res, 200, shape([settings], params)) : json(res, 204)
+  }
+  json(res, 405, { message: 'method not allowed' })
+}
+
 async function rest(req, res, url) {
   const table = url.pathname.slice('/rest/v1/'.length)
+  if (table === 'site_settings') return siteSettings(req, res, url)
   if (table !== 'studio_articles') return json(res, 404, { code: 'PGRST205', message: `Could not find the table 'public.${table}' in the schema cache` })
   const service = req.headers.apikey === SERVICE_KEY
   const params = url.searchParams
