@@ -17,6 +17,15 @@
 
 import type { SiteSettings } from './types'
 
+/**
+ * Studio positioning. The homepage title, and the default title/description for every studio
+ * page that does not set its own. Fixed in code on purpose: the legacy JDM site_settings SEO
+ * defaults (default_seo_description etc.) must never reach the studio pages.
+ */
+export const STUDIO_TITLE = 'DAINEKU | Creative Technology & Simulation Studio'
+export const STUDIO_DESCRIPTION =
+  'DAINEKU is a creative technology studio developing real-time simulations, interactive 3D experiences and cinematic digital environments.'
+
 /** The single canonical base URL for this deployment. Never use DB for this. */
 export function getBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'https://daineku.com').replace(/\/$/, '')

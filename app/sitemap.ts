@@ -74,6 +74,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     ...journalUrls,
+    // Legal pages: dated in their own source (app/privacy, app/terms).
+    { url: `${baseUrl}/privacy`, lastModified: '2026-10-13', changeFrequency: 'yearly' as const, priority: 0.3 },
+    { url: `${baseUrl}/terms`, lastModified: '2026-10-13', changeFrequency: 'yearly' as const, priority: 0.3 },
     archiveUrl,
     ...modelUrls,
     buildsListingUrl,

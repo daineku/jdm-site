@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import hero from '@/public/images/brand/hero.png'
-import wordmark from '@/public/images/brand/title-wordmark.png'
 import { HERO } from './content'
 import { Arrow } from './primitives'
 
@@ -22,13 +21,7 @@ export default function StudioHero() {
 
       <div className="st-container st-hero__content">
         <div className="st-hero__copy">
-          <Image
-            src={wordmark}
-            alt="DAINEKU — Real-Time Simulation & Spatial Design"
-            className="st-hero__title-img"
-            sizes="(max-width: 899px) 300px, 500px"
-            priority
-          />
+          <p className="st-label st-label--rule" style={{ margin: 0 }}>{HERO.eyebrow}</p>
           <h1 id="hero-title" className="st-h1 st-hero__h1">{HERO.headline}</h1>
           <p className="st-lead st-hero__body">{HERO.body}</p>
           <div className="st-hero__ctas">

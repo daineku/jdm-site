@@ -60,6 +60,7 @@ export default defineConfig({
         // Reserved .invalid domain: a test-only inbox that can never receive mail.
         CONTACT_EMAIL: SMOKE_INBOX,
         CONTACT_FROM_EMAIL: 'DAINEKU Smoke <sender@smoke.invalid>',
+        CONTACT_FORM_ENABLED: 'true',
         RESEND_API_KEY: 'smoke-test-key',
         RESEND_API_URL: `http://127.0.0.1:${MOCK_PORT}/emails`,
         SUPABASE_URL_OVERRIDE: BACKEND,

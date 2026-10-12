@@ -4,16 +4,15 @@
  * The Kanjo is the studio's original project in development, not client work.
  */
 
-export const KANJO_URL = 'https://www.thekanjo.com/'
-
 /** Only actual routes and sections. Contact already has its own header CTA. */
 export const STUDIO_NAV: readonly { id: string; label: string; href?: string }[] = [
   { id: 'services', label: 'Capabilities' },
-  { id: 'work', label: 'The Kanjo' },
-  { id: 'journal', label: 'Journal', href: '/journal' },
+  { id: 'work', label: 'Projects' },
+  { id: 'journal', label: 'Articles', href: '/journal' },
 ]
 
 export const HERO = {
+  eyebrow: 'Creative Technology & Simulation Studio',
   headline: 'Real-time simulation, interactive 3D environments, cinematic visuals.',
   body: 'DAINEKU develops driving simulations, interactive software and navigable 3D worlds. Our work spans vehicle dynamics, intelligent traffic, environment design and cinematic production — brought together in The Kanjo, our original racing project.',
   disciplines: ['Simulation & interaction', 'Worldbuilding & rendering', 'Video & visual production'],
@@ -61,60 +60,16 @@ export const SERVICES = {
   ],
 }
 
-export const WORK = {
-  title: 'The Kanjo',
-  kanjo: {
-    category: 'Original project · Racing simulation',
-    headline: 'Highway racing, simulated in real time.',
-    body: [
-      'The Kanjo is a night-time driving simulation set on an elevated Japanese expressway. Its driving physics, AI traffic, rival racers and environment run together in a playable world.',
-      'The project combines custom vehicle behaviour, steering-wheel feedback, digital instrumentation and a city-scale night scene.',
-    ],
-    image: {
-      alt: 'The Kanjo: a red hatchback with a tall rear wing on an elevated expressway at night, two cars ahead under orange street lights.',
-    },
-    cta: 'Explore The Kanjo',
-    systems: {
-      title: 'Inside the simulation',
-      items: [
-        {
-          title: 'Vehicle Physics',
-          body: 'A Pacejka-based tyre model, suspension and drivetrain calculate grip, weight transfer and vehicle response in real time.',
-        },
-        {
-          title: 'Traffic & Racing AI',
-          body: 'AI traffic shares the road, changes lanes and reacts to nearby cars; racing rivals use overtaking behaviour and rolling starts.',
-        },
-        {
-          title: 'Wheel & Instrumentation',
-          body: 'Steering-wheel force feedback is derived from simulated tyre forces, with digital cockpit instruments and validated MOZA R3 input.',
-        },
-        {
-          title: 'World & Rendering',
-          body: 'A continuous elevated road environment with night lighting, dynamic vehicle lamps, reflections and real-time rendering.',
-        },
-      ],
-    },
-  },
-}
+/* Projects (The Kanjo's copy, artwork and highlights) live in lib/projects.ts — the portfolio data model. */
 
 export const JOURNAL = {
-  label: 'Journal',
+  label: 'Articles',
   title: 'Inside the Process.',
   lead: 'Development notes, technical experiments and decisions behind the work.',
   cta: 'All articles',
-}
-
-/** Retained for the legacy ProcessSection module, which is not part of this homepage. */
-export const PROCESS = {
-  label: 'How a commission runs',
-  title: 'From Idea to Delivery.',
-  steps: [
-    { n: '01', title: 'Define', body: 'Agree on objectives, scope and deliverables.' },
-    { n: '02', title: 'Prototype', body: 'Validate the core interaction or visual direction.' },
-    { n: '03', title: 'Produce', body: 'Develop the agreed systems, environments or footage.' },
-    { n: '04', title: 'Deliver', body: 'Test, refine and hand over the agreed result.' },
-  ],
+  featuredLabel: 'Featured story',
+  latestLabel: 'Latest updates',
+  readCta: 'Read the story',
 }
 
 export const PROJECT_TYPES = [

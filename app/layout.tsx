@@ -7,8 +7,7 @@ import '@/components/studio/studio.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getSiteSettings } from '@/lib/data'
-import { buildSiteConfig } from '@/lib/siteConfig'
-import { getBaseUrl } from '@/lib/seo'
+import { STUDIO_DESCRIPTION, STUDIO_TITLE, getBaseUrl } from '@/lib/seo'
 import { getSocialLinks } from '@/lib/social'
 
 // Studio display face, self-hosted from app/fonts (SIL OFL). Committed file + next/font/local
@@ -23,7 +22,6 @@ const display = localFont({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()
-  const siteName = settings?.site_title || 'DAINEKU'
   const baseUrl  = getBaseUrl()
 
   // Non-production Vercel deployments (previews, branch deploys) are noindexed.
@@ -31,13 +29,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const isNonProduction =
     process.env.VERCEL_ENV !== undefined && process.env.VERCEL_ENV !== 'production'
 
+  // Studio defaults come from code (lib/seo.ts), never from the legacy site_settings SEO fields,
+  // so a stale JDM description or OG image cannot reach a studio page. Pages override as needed.
+  // Icons are the app/ file conventions (favicon.ico, icon.png, apple-icon.png); the old
+  // site_settings.favicon_url override is deliberately not read any more.
   return {
     metadataBase: new URL(baseUrl),
     title: {
-      default: siteName,
-      template: `%s | ${siteName}`,
+      default: STUDIO_TITLE,
+      template: '%s | DAINEKU',
     },
-    description: settings?.default_seo_description || undefined,
+    description: STUDIO_DESCRIPTION,
+    applicationName: 'DAINEKU',
     robots: isNonProduction
       ? { index: false, follow: false }
       : { index: true, follow: true },
@@ -45,23 +48,19 @@ export async function generateMetadata(): Promise<Metadata> {
     ...(settings?.search_console_verification
       ? { verification: { google: settings.search_console_verification } }
       : {}),
-    // Favicon from DB if set, else Next.js auto-detects app/favicon.ico
-    ...(settings?.favicon_url
-      ? { icons: { icon: settings.favicon_url } }
-      : {}),
     openGraph: {
       type: 'website',
-      locale: 'en_US',
-      siteName,
-      title: siteName,
-      description: settings?.default_seo_description || undefined,
-      images: settings?.default_og_image ? [settings.default_og_image] : [],
+      locale: 'en_GB',
+      siteName: 'DAINEKU',
+      title: STUDIO_TITLE,
+      description: STUDIO_DESCRIPTION,
+      images: ['/images/brand/og.jpg'],
     },
     twitter: {
       card: 'summary_large_image',
-      title: siteName,
-      description: settings?.default_seo_description || undefined,
-      images: settings?.default_og_image ? [settings.default_og_image] : [],
+      title: STUDIO_TITLE,
+      description: STUDIO_DESCRIPTION,
+      images: ['/images/brand/og.jpg'],
     },
   }
 }
@@ -78,7 +77,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const headersList = await headers()
   const isAdmin = headersList.get('x-is-admin') === '1'
 
-  const siteConfig = buildSiteConfig(settings)
   const socials = getSocialLinks(settings)
 
   return (
@@ -86,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {!isAdmin && <Header socials={socials} />}
         {isAdmin ? children : <div id="main" tabIndex={-1} style={{ outline: 'none' }}>{children}</div>}
-        {!isAdmin && <Footer config={siteConfig} socials={socials} />}
+        {!isAdmin && <Footer />}
         {/* GA4 — afterInteractive so it never blocks page render */}
         {ga4Id && (
           <>

@@ -10,7 +10,13 @@
     "test:description": "node lib/renderDescription.test.ts",
     "test:contact": "node --test lib/contact.test.ts",
     "test:journal": "node --test lib/journal.test.ts",
-    "test:smoke": "playwright test"
+    "test:projects": "node --test lib/projects.test.ts",
+    "test:support": "node --test lib/support.test.ts",
+    "test:unit": "node --test lib/contact.test.ts lib/contactDelivery.test.ts lib/journal.test.ts lib/projects.test.ts lib/support.test.ts",
+    "test:smoke": "playwright test",
+    "media:project": "node scripts/prepare-project-media.mjs",
+    "test:contact-delivery": "node --test lib/contactDelivery.test.ts",
+    "icons": "node scripts/build-favicons.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

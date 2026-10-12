@@ -147,6 +147,9 @@ git push -u origin main --force
 npm run test:description   # 13-case unit test for description text formatter
 npm run test:contact       # enquiry validation unit tests
 npm run test:journal       # Journal article validation unit tests
+npm run test:projects      # portfolio data model invariants
+npm run test:support       # Support module (Patreon) configuration rules
+npm run test:unit          # all of the above except test:description
 ```
 
 Expected output: `13 passed, 0 failed`. Must pass before every deploy.

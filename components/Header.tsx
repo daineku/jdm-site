@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import logoMark from '@/public/images/brand/logo-mark.png'
+import wordmark from '@/public/images/brand/title-wordmark.png'
 import { STUDIO_NAV } from '@/components/studio/content'
 import { SocialList } from '@/components/studio/SocialIcons'
 import type { SocialLink } from '@/lib/social'
@@ -27,6 +27,8 @@ export default function Header({ socials }: { socials: SocialLink[] }) {
 
   // Hash links work from every page: on "/" they scroll, elsewhere they navigate home.
   const href = (id: string) => STUDIO_NAV.find(n => n.id === id)?.href ?? `/#${id}`
+  // Route entries (Articles → /journal) are active on their own pages, including article pages.
+  const onRoute = (route?: string) => !!route && (pathname === route || pathname.startsWith(`${route}/`))
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -93,8 +95,7 @@ export default function Header({ socials }: { socials: SocialLink[] }) {
       <a href="#main" className="st-skip">Skip to content</a>
       <div className="st-container st-header__bar">
         <Link href="/" className="st-brand" aria-label="DAINEKU — home" onClick={() => setOpen(false)}>
-          <Image src={logoMark} alt="" className="st-brand__mark" sizes="40px" priority />
-          <span className="st-brand__word" aria-hidden="true">DAINEKU</span>
+          <Image src={wordmark} alt="" className="st-brand__wordmark" sizes="240px" priority />
         </Link>
 
         <nav className="st-nav" aria-label="Primary">
@@ -102,8 +103,8 @@ export default function Header({ socials }: { socials: SocialLink[] }) {
             <a
               key={item.id}
               href={href(item.id)}
-              className={`st-nav__link${active === item.id ? ' is-active' : ''}`}
-              aria-current={active === item.id ? 'location' : undefined}
+              className={`st-nav__link${active === item.id || onRoute(item.href) ? ' is-active' : ''}`}
+              aria-current={onRoute(item.href) ? 'page' : active === item.id ? 'location' : undefined}
             >
               {item.label}
             </a>
