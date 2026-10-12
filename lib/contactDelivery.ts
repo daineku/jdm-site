@@ -35,6 +35,17 @@ export function isDeliveryConfigured(): boolean {
   return getDeliveryConfig() !== null
 }
 
+/**
+ * Release gate. Provider credentials alone do not prove that mail can be delivered: until the
+ * sending domain is verified in Resend, every send is rejected. The form (and the endpoint)
+ * therefore stay closed until the owner sets CONTACT_FORM_ENABLED=true after verifying the
+ * domain and sending a real test enquiry. Read per request; Vercel applies env changes on the
+ * next deployment.
+ */
+export function isContactFormEnabled(): boolean {
+  return process.env.CONTACT_FORM_ENABLED?.trim().toLowerCase() === 'true' && isDeliveryConfigured()
+}
+
 export type DeliveryResult = { ok: true } | { ok: false; reason: 'not_configured' | 'provider_error' }
 
 /** Resolves ok only when the provider has accepted the message (2xx with an id). */

@@ -259,14 +259,9 @@
   gap: 12px;
   justify-self: start;
 }
-.st-brand__mark { width: 40px; height: auto; display: block; }
-.st-brand__word {
-  font-family: var(--st-font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.32em;
-  color: var(--st-text);
-}
+/* The title wordmark is the only brand element in the header. The PNG is 2043×308 with a
+   ~6 px transparent margin, so its visible lettering is ~96% of the box: size by height. */
+.st-brand__wordmark { height: 34px; width: auto; display: block; }
 
 .st-nav { display: flex; align-items: center; gap: 4px; }
 .st-nav__link {
@@ -353,8 +348,7 @@
   .st-nav { display: none; }
   .st-header__cta { display: none; }
   .st-burger { display: inline-flex; }
-  .st-brand__mark { width: 34px; }
-  .st-brand__word { font-size: 0.85rem; letter-spacing: 0.28em; }
+  .st-brand__wordmark { height: 28px; }
 }
 @media (min-width: 960px) {
   .st-menu { display: none !important; }
@@ -522,14 +516,8 @@
   padding-bottom: clamp(120px, 15vh, 160px);
 }
 .st-hero__copy { max-width: 600px; display: grid; justify-items: start; }
-.st-hero__title-img {
-  width: clamp(260px, 33vw, 500px);
-  height: auto;
-  margin: 0;
-  display: block;
-}
 /* The headline names the three capabilities, so it runs longer than a slogan: wider measure, one step smaller. */
-.st-hero__h1 { margin-top: clamp(34px, 4.5vh, 48px); max-width: 17ch; font-size: clamp(2.4rem, 4.3vw, 4.1rem); }
+.st-hero__h1 { margin-top: clamp(22px, 3vh, 30px); max-width: 17ch; font-size: clamp(2.4rem, 4.3vw, 4.1rem); }
 .st-hero__body { margin-top: 24px; max-width: 47ch; color: #c3c9c3; }
 .st-hero__ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 40px; }
 
@@ -570,8 +558,6 @@
     margin-top: -24px;
   }
   .st-hero__img { object-position: 84% 50%; }
-  /* Full content width (capped) keeps the gold subtitle inside the wordmark legible. */
-  .st-hero__title-img { width: min(100%, 420px); }
   .st-hero__shade {
     background:
       linear-gradient(180deg, var(--st-bg-deep) 0%, rgba(5, 8, 6, 0) 30%, rgba(5, 8, 6, 0) 72%, var(--st-bg) 100%);
@@ -904,6 +890,24 @@
 .st-prose img { display: block; max-width: 100%; height: auto; border: 1px solid var(--st-border); }
 .st-prose hr { border: 0; border-top: 1px solid var(--st-border); }
 .st-article__back { max-width: 720px; margin: clamp(40px, 5vw, 72px) auto 0; }
+
+/* Legal pages (/privacy, /terms) */
+.st-legal { padding-bottom: var(--st-section-y); }
+.st-legal .st-prose section { scroll-margin-top: calc(var(--st-hdr) + 16px); }
+/* The prose rhythm (.st-prose > * + *) stops at <section>; repeat it inside each section. */
+.st-legal .st-prose section > * + * { margin-top: 1.1em; }
+.st-legal .st-prose section > h2 + * { margin-top: 0.7em; }
+.st-legal .st-prose section h2 { margin-top: 0; }
+.st-legal .st-prose > section { margin-top: 2.4em; }
+.st-legal__intro { font-size: 1.12rem; color: var(--st-text); }
+.st-legal__toc { padding: 18px 22px; border: 1px solid var(--st-border); background: var(--st-surface); }
+.st-legal__toc ol { margin: 0; columns: 2; column-gap: 32px; font-size: 0.92rem; }
+.st-legal__toc a { color: var(--st-text-2); text-decoration: none; }
+.studio .st-legal__toc a:hover { color: var(--st-gold); }
+.st-legal__links { display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 599px) {
+  .st-legal__toc ol { columns: 1; }
+}
 .st-preview-banner {
   position: sticky; top: var(--st-hdr); z-index: 20;
   background: var(--st-gold); color: var(--st-ink);
@@ -1008,44 +1012,23 @@
    Footer
    -------------------------------------------------------------------------- */
 
-.st-footer { background: var(--st-bg-deep); border-top: 1px solid var(--st-border); }
-.st-footer__top {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) repeat(3, minmax(0, 2fr));
-  gap: clamp(32px, 4vw, 64px);
-  padding-block: clamp(64px, 7vw, 104px) clamp(48px, 5vw, 72px);
-}
-.st-footer__brand { display: grid; gap: 22px; align-content: start; justify-items: start; }
-.st-footer__wordmark { width: clamp(240px, 26vw, 360px); height: auto; display: block; }
-.st-footer__brand .st-body { max-width: 38ch; }
-.st-footer__col { display: grid; gap: 18px; align-content: start; }
-.st-footer__col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.st-footer__link { font-size: 0.95rem; color: var(--st-text-2); transition: color 0.25s; }
-.studio .st-footer__link:hover { color: var(--st-text); }
+.st-footer { background: var(--st-bg-deep); border-top: 1px solid var(--st-border); padding-top: clamp(28px, 4vw, 48px); }
 .st-footer__bottom {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding-block: 26px 32px;
-  border-top: 1px solid var(--st-border);
+  gap: 14px 24px;
+  padding-block: 18px 30px;
   font-family: var(--st-font-display);
   font-size: 0.7rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--st-text-3);
 }
-.st-footer__bottom a { color: var(--st-text-2); }
-.studio .st-footer__bottom a:hover { color: var(--st-gold); }
-
-@media (max-width: 999px) {
-  .st-footer__top { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .st-footer__brand { grid-column: 1 / -1; }
-}
-@media (max-width: 599px) {
-  .st-footer__top { grid-template-columns: 1fr 1fr; }
-}
+.st-footer__legal { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; }
+.st-footer__legal a { color: var(--st-text-2); transition: color 0.25s; }
+.studio .st-footer__legal a:hover { color: var(--st-gold); }
 
 /* --------------------------------------------------------------------------
    Archive (legacy gallery) — framing only; the grid itself is untouched.

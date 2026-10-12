@@ -964,11 +964,13 @@ All homepage copy lives in `components/studio/content.ts`; each section has one 
 
 Form fields: name, email, project type (Simulation & Interactive Development / Digital Environment / Spatial Design / Cinematic & Video Production / Other — `PROJECT_TYPE_VALUES` in `lib/contact.ts`), optional timeline, project description. Validation is shared (`lib/contact.ts`) by the form and the server.
 
+**Release gate (v11.1):** the form is rendered, and `POST /api/contact` accepts submissions, only when `CONTACT_FORM_ENABLED=true` **and** the Resend configuration below is complete (`isContactFormEnabled` in `lib/contactDelivery.ts`). Otherwise the section shows "The project enquiry form is being prepared." and the endpoint answers 503 `not_configured`. Set the flag only after the sending domain is **Verified** in Resend and a real test enquiry has arrived, then redeploy. The homepage never renders a mailto fallback (`StudioContact` passes `email={null}`), so the recipient never reaches public HTML or client bundles; a smoke test checks the page, every client chunk, the legal pages, feed and sitemap for it.
+
 **Delivery modes** (decided on the server per request, `app/page.tsx`):
 
 | Configured | Behaviour |
 |---|---|
-| `RESEND_API_KEY` + `CONTACT_FROM_EMAIL` + an inbox | **server**: `POST /api/contact` → Resend → inbox. Success is shown only after Resend returns 2xx with an id; failures show an error plus the direct address. |
+| `CONTACT_FORM_ENABLED=true` + `RESEND_API_KEY` + `CONTACT_FROM_EMAIL` + an inbox | **server**: `POST /api/contact` → Resend → inbox. Success is shown only after Resend returns 2xx with an id; failures show an error plus the direct address. |
 | only `CONTACT_EMAIL` | **mailto** fallback: drafts the enquiry in the visitor's email app and says so. |
 | nothing | no form; socials or a "being set up" line. |
 
@@ -1022,10 +1024,11 @@ The legacy archive tables pre-date this work and run with RLS disabled (see `mig
 | `npm run test:contact` | 8 passed — enquiry validation (`lib/contact.test.ts`, Node test runner) |
 | `npm run test:journal` | 6 passed — article validation and slugs (`lib/journal.test.ts`) |
 | `npm run test:projects` | 4 passed — portfolio data invariants (`lib/projects.test.ts`; image imports are stubbed through a loader hook) |
+| `npm run test:contact-delivery` | 3 passed — provider configuration and the CONTACT_FORM_ENABLED release gate |
 | `npm run test:support` | 5 passed — Support module URL allowlist, precedence and defaults (`lib/support.test.ts`) |
 | `npm run test:unit` | all four unit suites together |
 | `npm run build` | passes — `next.config.ts` no longer ignores type/lint errors, so the build enforces both |
-| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1440/1280/768/390/360 viewport sweep) — 69 passed, 15 skipped by design. `tests/mock-backend.mjs` now also serves `site_settings` (Support module tests PATCH it) |
+| `npm run build && npm run test:smoke` | Playwright smoke suite (`tests/smoke.spec.ts`, desktop 1440 + mobile 390, plus a 1920/1440/1280/768/390/360 viewport sweep) — 79 passed, 17 skipped by design. `tests/mock-backend.mjs` now also serves `site_settings` (Support module tests PATCH it) |
 
 - `eslint.config.mjs` uses `FlatCompat` (`@eslint/eslintrc`) with `next/core-web-vitals` + `next/typescript` — the Next 15 setup. The old flat import `eslint-config-next/core-web-vitals` only exists in v16.
 - Admin `api()` is `api<T = unknown>()`: pass the response shape at the call site.
@@ -1039,3 +1042,12 @@ The legacy archive tables pre-date this work and run with RLS disabled (see `mig
 ### Missing model pages
 
 `/cars/<unknown>` renders the not-found UI with `noindex`, but the HTTP status is 200: `app/cars/[slug]/loading.tsx` is a streaming boundary, so the status is committed before `notFound()` runs (same structure as before v10).
+
+### v11.1 production finalisation (October 2026)
+
+- **Header:** the title wordmark (`public/images/brand/title-wordmark.png`) is the only brand element: 34 px tall on desktop (227 px wide), 28 px below 960 px; the header stays 76 / 64 px. The D mark and the separate DAINEKU text label are gone, and the hero no longer repeats the wordmark — it opens with the eyebrow "Creative Technology & Simulation Studio".
+- **Navigation:** Capabilities (`/#services`) · Projects (`/#work`) · Articles (`/journal`, active on `/journal/*`). Routes are unchanged; the Journal section label reads "Articles".
+- **Favicons:** `npm run icons` (`scripts/build-favicons.mjs`) builds `app/favicon.ico` (16/32/48), `app/icon.png` (512) and `app/apple-icon.png` (180, on #080c09) from `logo-mark.png`. The layout no longer reads `site_settings.favicon_url`.
+- **Footer:** divider artwork, © line, Privacy and Terms only. The archive, builds and parts routes still work but are no longer linked. `lib/siteConfig.ts` was removed with the old footer.
+- **Legal:** `/privacy` and `/terms` (`components/studio/LegalPage.tsx`), written from the implementation. **Production drafts:** they name no legal entity, address or governing law; have them reviewed, and update them when data handling changes (analytics, stored enquiries, new providers).
+- **SEO:** `STUDIO_TITLE` = "DAINEKU | Creative Technology & Simulation Studio" and `STUDIO_DESCRIPTION` in `lib/seo.ts` are the homepage metadata and the layout defaults (title template `%s | DAINEKU`); the legacy `site_settings` SEO description / OG image are no longer used as defaults. Sitemap lists /privacy and /terms; previews stay noindex.

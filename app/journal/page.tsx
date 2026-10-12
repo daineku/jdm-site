@@ -9,7 +9,7 @@ import { getBaseUrl } from '@/lib/seo'
 // Read per request so an article published in the admin appears immediately — no rebuild.
 export const dynamic = 'force-dynamic'
 
-const TITLE = 'Journal — DAINEKU'
+const TITLE = 'Articles | DAINEKU'
 const DESCRIPTION = 'Development notes, technical experiments and the decisions behind DAINEKU’s real-time simulation, environment and cinematic work.'
 
 export const metadata: Metadata = {

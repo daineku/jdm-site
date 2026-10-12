@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { validateEnquiry } from '@/lib/contact'
-import { deliverEnquiry } from '@/lib/contactDelivery'
+import { deliverEnquiry, isContactFormEnabled } from '@/lib/contactDelivery'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +37,8 @@ const fail = (status: number, error: string, extra: Record<string, unknown> = {}
   NextResponse.json({ ok: false, error, ...extra }, { status, headers: { 'Cache-Control': 'no-store' } })
 
 export async function POST(req: NextRequest) {
+  // Closed until delivery has been verified end to end (see isContactFormEnabled).
+  if (!isContactFormEnabled()) return fail(503, 'not_configured')
   // Browsers always send Origin on a cross-origin POST; refuse submissions from other sites.
   const origin = req.headers.get('origin')
   if (origin && !sameSite(origin, req)) return fail(403, 'forbidden')

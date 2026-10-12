@@ -7,11 +7,12 @@
 /** Only actual routes and sections. Contact already has its own header CTA. */
 export const STUDIO_NAV: readonly { id: string; label: string; href?: string }[] = [
   { id: 'services', label: 'Capabilities' },
-  { id: 'work', label: 'The Kanjo' },
-  { id: 'journal', label: 'Journal', href: '/journal' },
+  { id: 'work', label: 'Projects' },
+  { id: 'journal', label: 'Articles', href: '/journal' },
 ]
 
 export const HERO = {
+  eyebrow: 'Creative Technology & Simulation Studio',
   headline: 'Real-time simulation, interactive 3D environments, cinematic visuals.',
   body: 'DAINEKU develops driving simulations, interactive software and navigable 3D worlds. Our work spans vehicle dynamics, intelligent traffic, environment design and cinematic production — brought together in The Kanjo, our original racing project.',
   disciplines: ['Simulation & interaction', 'Worldbuilding & rendering', 'Video & visual production'],
@@ -62,7 +63,7 @@ export const SERVICES = {
 /* Projects (The Kanjo's copy, artwork and highlights) live in lib/projects.ts — the portfolio data model. */
 
 export const JOURNAL = {
-  label: 'Journal',
+  label: 'Articles',
   title: 'Inside the Process.',
   lead: 'Development notes, technical experiments and decisions behind the work.',
   cta: 'All articles',

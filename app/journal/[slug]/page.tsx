@@ -13,8 +13,8 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getPublishedArticle((await params).slug)
-  if (!article) return { title: { absolute: 'Article not found — DAINEKU' }, robots: { index: false } }
-  const title = `${article.title} — DAINEKU Journal`
+  if (!article) return { title: { absolute: 'Article not found | DAINEKU' }, robots: { index: false } }
+  const title = `${article.title} | DAINEKU`
   const description = article.excerpt || undefined
   const images = article.cover_image_url ? [{ url: article.cover_image_url, alt: article.cover_alt }] : ['/images/brand/og.jpg']
   return {

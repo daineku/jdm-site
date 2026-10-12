@@ -8,17 +8,17 @@ import StudioContact from '@/components/studio/StudioContact'
 import Reveal from '@/components/studio/Reveal'
 import { getSiteSettings } from '@/lib/data'
 import { getHomepageArticles } from '@/lib/journal'
-import { getBaseUrl } from '@/lib/seo'
-import { isDeliveryConfigured } from '@/lib/contactDelivery'
+import { STUDIO_DESCRIPTION, STUDIO_TITLE, getBaseUrl } from '@/lib/seo'
+import { isContactFormEnabled } from '@/lib/contactDelivery'
 import { getSocialLinks } from '@/lib/social'
 import { resolveSupport } from '@/lib/support'
 
 // Studio positioning is fixed here on purpose: the legacy JDM SEO defaults in
 // site_settings still apply to the archive pages, but never to the studio homepage.
-const TITLE = 'DAINEKU — Real-Time Simulation & Spatial Design Studio'
-const DESCRIPTION =
-  'DAINEKU develops real-time simulation, interactive 3D environments and cinematic visuals. Its racing game The Kanjo runs its own vehicle simulation, AI traffic, steering-wheel force feedback and night lighting.'
-const OG_IMAGE = { url: '/images/brand/og.jpg', width: 1200, height: 630, alt: 'DAINEKU — a city at dusk, half wireframe, half finished' }
+// Shared with the root layout's defaults (lib/seo.ts) so no legacy JDM text can reach studio pages.
+const TITLE = STUDIO_TITLE
+const DESCRIPTION = STUDIO_DESCRIPTION
+const OG_IMAGE = { url: '/images/brand/og.jpg', width: 1200, height: 630, alt: 'DAINEKU: a city at dusk, half wireframe, half finished' }
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -44,7 +44,7 @@ export default async function Home() {
   // getSiteSettings is request-cached: the layout already fetched it, so this is free.
   const [settings, articles] = await Promise.all([getSiteSettings(), getHomepageArticles(4)])
   const socials = getSocialLinks(settings)
-  const deliveryReady = isDeliveryConfigured()
+  const deliveryReady = isContactFormEnabled()
   const support = resolveSupport(settings)
   const baseUrl = getBaseUrl()
 
