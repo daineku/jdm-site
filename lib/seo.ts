@@ -31,6 +31,54 @@ export function getBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'https://daineku.com').replace(/\/$/, '')
 }
 
+type Env = Record<string, string | undefined>
+
+/**
+ * Production = the Vercel production deployment, or a plain `next start` with no VERCEL_ENV
+ * (local builds and the smoke suite). Previews and branch deployments are never indexable:
+ * the root layout emits noindex, robots.txt disallows everything, and Vercel additionally sends
+ * `X-Robots-Tag: noindex` on every non-production deployment.
+ */
+export function isProductionDeployment(env: Env = process.env): boolean {
+  return env.VERCEL_ENV === undefined || env.VERCEL_ENV === 'production'
+}
+
+/**
+ * robots.txt rules. Production: everything crawlable except the API; `/_next/` is NOT blocked —
+ * Google must fetch the JavaScript, CSS and optimised images under it to render the pages. The
+ * admin path is secret and is not listed here (listing it would publish it); it is noindexed by
+ * its own metadata instead. Non-production: nothing crawlable and no sitemap.
+ */
+export function robotsRules(production: boolean, baseUrl: string): {
+  rules: { userAgent: string; allow?: string; disallow?: string | string[] }[]
+  sitemap?: string
+} {
+  if (!production) return { rules: [{ userAgent: '*', disallow: '/' }] }
+  return {
+    rules: [{ userAgent: '*', allow: '/', disallow: ['/api/'] }],
+    sitemap: `${baseUrl}/sitemap.xml`,
+  }
+}
+
+/** Dates the legal documents last changed. Also used by the sitemap, so the two cannot drift. */
+export const LEGAL_UPDATED = { privacy: '2026-10-13', terms: '2026-10-13' } as const
+
+/**
+ * Legacy automotive archive (/archive, /cars, /builds, /parts). The routes and their database
+ * stay intact and keep answering 200, but they are no longer part of the studio's positioning:
+ * by default they are `noindex, follow` and absent from the sitemap. Set
+ * LEGACY_ARCHIVE_INDEXABLE=true to make them indexable again (and listed in the sitemap) if
+ * Search Console shows they still earn traffic worth keeping.
+ */
+export function isLegacyArchiveIndexable(env: Env = process.env): boolean {
+  return env.LEGACY_ARCHIVE_INDEXABLE === 'true'
+}
+
+/** Robots directive for a legacy archive page; `undefined` inherits the site default (indexable). */
+export function legacyRobots(env: Env = process.env): { index: false; follow: true } | undefined {
+  return isLegacyArchiveIndexable(env) ? undefined : { index: false, follow: true }
+}
+
 /** Truncate a string to ≤ maxLen chars, ending at a word boundary where possible. */
 function truncate(text: string, maxLen = 160): string {
   if (text.length <= maxLen) return text

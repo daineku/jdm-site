@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { getPartCategoryBySlug, getPartsForCategory, getSiteSettings } from '@/lib/data'
-import { resolveSeoTitle, resolveSeoDescription, resolveOgImages, getBaseUrl } from '@/lib/seo'
+import { resolveSeoTitle, resolveSeoDescription, resolveOgImages, getBaseUrl, legacyRobots } from '@/lib/seo'
 import { renderDescription } from '@/lib/renderDescription'
 
 export const dynamic = 'force-dynamic'
@@ -19,9 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const images      = resolveOgImages(category.og_image_url, category.image_url, settings)
   const canonical   = `${getBaseUrl()}/parts/${slug}`
 
+  // Legacy route: live, but out of the studio's index and sitemap by default (lib/seo.ts).
   return {
     title, description,
     alternates: { canonical },
+    robots: legacyRobots(),
     openGraph: { type: 'website', url: canonical, title, description, images },
     twitter: { card: 'summary_large_image', title, description, images },
   }

@@ -1,13 +1,24 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { supabase } from './supabase'
 import type { Model, GalleryPhoto, Brand, SiteSettings, PublicBuildInstance, Accessory } from './types'
 
-// Request-cached: the root layout (twice — metadata and body) and the page each ask for the
-// settings row; React's cache() turns that into one query per request.
-export const getSiteSettings = cache(async (): Promise<SiteSettings | null> => {
-  const { data } = await supabase.from('site_settings').select('*').single()
-  return data
-})
+/** Data-cache tag for the settings row; the admin settings API purges it on every write. */
+export const SITE_SETTINGS_TAG = 'site-settings'
+
+// Every public page reads the settings row (root layout metadata + body, the homepage). The
+// read is held in the Next.js data cache for five minutes and purged by the admin on write, so
+// a page request normally costs no database round trip; React's cache() then dedupes the
+// remaining calls within one request.
+const readSiteSettings = unstable_cache(
+  async (): Promise<SiteSettings | null> => {
+    const { data } = await supabase.from('site_settings').select('*').single()
+    return data
+  },
+  ['site-settings'],
+  { tags: [SITE_SETTINGS_TAG], revalidate: 300 },
+)
+export const getSiteSettings = cache(readSiteSettings)
 
 export async function getBrands(): Promise<Brand[]> {
   const { data } = await supabase

@@ -260,9 +260,10 @@ test.describe('studio content', () => {
     expect(await meta('meta[name="twitter:title"]')).toBe('DAINEKU | Creative Technology & Simulation Studio')
     expect(await page.locator('meta[name="robots"][content*="noindex"]').count()).toBe(0)
     const ld = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent()) ?? '{}')
-    expect(ld['@type']).toBe('Organization')
-    expect(ld.name).toBe('DAINEKU')
-    expect(ld.description).toBe(description)
+    const org = ld['@graph'].find((n: { '@type': string }) => n['@type'] === 'Organization')
+    expect(org.name).toBe('DAINEKU')
+    expect(org.description).toBe(description)
+    expect(ld['@graph'].filter((n: { '@type': string }) => n['@type'] === 'Organization')).toHaveLength(1)
     // Icons: the generated favicon set, never a database URL.
     expect(await page.locator('link[rel="icon"][href^="/favicon.ico"]').count()).toBe(1)
     expect(await page.locator('link[rel="icon"][href^="/icon.png"]').getAttribute('sizes')).toBe('512x512')
@@ -549,7 +550,7 @@ test.describe('journal', () => {
     expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toMatch(new RegExp(`/journal/${slug}$`))
     expect(await page.locator('meta[property="og:type"]').getAttribute('content')).toBe('article')
     const ld = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent()) ?? '{}')
-    expect(ld['@type']).toBe('Article')
+    expect(ld['@graph'].map((n: { '@type': string }) => n['@type'])).toEqual(['Organization', 'BreadcrumbList', 'BlogPosting'])
 
     await page.goto('/')
     const home = page.locator('section#journal')
@@ -610,8 +611,8 @@ test.describe('journal', () => {
     await expect(page.locator('.st-story .st-journal__title')).toHaveText(title)
     await expect(page.locator('.st-journal__card')).toHaveCount(1)
     const ld = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent()) ?? '{}')
-    expect(ld['@type']).toBe('Blog')
-    expect(ld.blogPost).toHaveLength(2)
+    const blog = ld['@graph'].find((n: { '@type': string }) => n['@type'] === 'Blog')
+    expect(blog.blogPost).toHaveLength(2)
 
     await openJournalAdmin(page)
     await page.getByTestId('journal-row').filter({ hasText: title }).getByRole('button', { name: 'Edit' }).click()

@@ -477,22 +477,34 @@ These chains are implemented in `lib/seo.ts` (`resolveSeoTitle`, `resolveSeoDesc
 
 Query-param filter pages (`/?brand=slug`) have no canonical tag — they are not in the sitemap and are not separate routes.
 
-### Indexing policy
+### Indexing policy (October 2026 — technical SEO pass)
 
 | Page type | Indexed? | In sitemap? |
 |---|---|---|
-| Homepage | ✅ | ✅ |
-| Published model pages | ✅ | ✅ |
-| Admin panel | ❌ noindex | ❌ |
-| Unpublished models | ❌ 404 (notFound()) | ❌ |
-| Brand filter (`?brand=x`) | Crawlable, no canonical | ❌ |
-| Vercel preview deployments | ❌ noindex (VERCEL_ENV !== 'production') | ❌ |
-| Future category pages | ✅ when `is_published=true` | ✅ when built |
-| Future brand pages | ✅ when route exists | ✅ when built |
+| Homepage `/` | ✅ | ✅ (no `lastmod`: it changes with deploys, not content) |
+| `/journal` | ✅ once an article is published; `noindex, follow` while empty | ✅ only when ≥ 1 article |
+| `/journal/[slug]` published | ✅ | ✅ `lastmod` = `updated_at` |
+| Drafts / scheduled | ❌ 404 until `published_at` ≤ now | ❌ |
+| `/privacy`, `/terms` | ✅ | ✅ `lastmod` = `LEGAL_UPDATED` (lib/seo.ts, shared with the pages) |
+| Legacy archive: `/archive`, `/cars/*`, `/builds*`, `/parts*` | ❌ `noindex, follow` (routes and data intact, 200) | ❌ |
+| Legacy archive with `LEGACY_ARCHIVE_INDEXABLE=true` | ✅ | ✅ |
+| Admin panel | ❌ noindex (own metadata; the path is never listed in robots.txt) | ❌ |
+| 404s (`app/not-found.tsx`) | ❌ noindex, real 404 status | ❌ |
+| Vercel previews / branch deploys | ❌ noindex meta + robots.txt `Disallow: /` + Vercel's own `X-Robots-Tag: noindex` | ❌ (no sitemap advertised) |
 
-### Staging / preview noindex
+**robots.txt** (`app/robots.ts` → `robotsRules` in `lib/seo.ts`): production allows everything except `/api/`. `/_next/` is **not** blocked — Google renders pages with the JS, CSS and `/_next/image` responses under it. Non-production disallows `/`.
 
-`app/layout.tsx` checks `process.env.VERCEL_ENV`. Any Vercel deployment where `VERCEL_ENV !== 'production'` gets `robots: { index: false, follow: false }`. Local dev has no `VERCEL_ENV` set and is not indexed by crawlers anyway. Production Vercel sets `VERCEL_ENV=production` automatically.
+**Sitemap** (`app/sitemap.ts`): studio pages only, canonical absolute URLs, real timestamps only (never "now"). Built per request, but the reads behind it are cached (below) so a request costs no query while the cache is warm.
+
+**Structured data** (`lib/jsonld.tsx`): one `@graph` per page with a single `Organization` (`#organization`) that every other node references by `@id`. Homepage: Organization + WebSite + a `VideoGame` node per visible project (The Kanjo, the studio's own racing simulation in development). `/journal`: Blog + BreadcrumbList. Articles: BlogPosting + BreadcrumbList. Nothing is stated that is not visible on the page (no ratings, reviews, addresses, prices).
+
+**Soft 404 fixed**: `app/cars/[slug]/loading.tsx` was removed. A loading boundary makes the App Router flush a 200 shell before `notFound()` runs, so unknown car slugs answered 200 with a 404 body.
+
+**Public read caching** (`lib/data.ts`, `lib/journal.ts`): `getSiteSettings`, `getPublishedArticles` and `getPublishedArticle` sit in the Next.js data cache (`unstable_cache`, 5 minutes, tags `site-settings` / `journal`) and are purged by the admin APIs on every write (`revalidateTag`). Publishing is therefore still immediate, while a normal page request makes no Supabase round trip. An article that becomes public purely by its scheduled `published_at` (no admin write at that moment) appears within the 5-minute window.
+
+**Tests**: `tests/seo.spec.ts` (Playwright, HTTP-level + JavaScript-disabled browser: robots, sitemap resolution, metadata, JSON-LD validity, 404 statuses, legacy noindex, internal links, crawlable assets, draft/publish/delete lifecycle) and `lib/seo.test.ts` (`npm run test:seo`: preview vs production rules).
+
+**Owner actions outside the repo**: `www.daineku.com` resolves to Vercel but has no certificate (TLS handshake fails) — add the `www` domain to the Vercel project and redirect it to the apex. Search Console: verify the property (admin → Settings → Search Console verification, or DNS), submit `https://daineku.com/sitemap.xml`, and request removal/inspection of any previously indexed `/cars/*`, `/builds/*`, `/archive` URLs as they turn `noindex`.
 
 ### OG / Twitter card completeness
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
-import { TABLE } from '@/lib/journal'
+import { JOURNAL_TAG, TABLE } from '@/lib/journal'
 import { ArticleOrderSchema } from '@/lib/validation/journal'
 
 // Featured order: body { ids } in display order; each article's sort_order becomes its index.
@@ -17,5 +18,6 @@ export async function PUT(req: NextRequest) {
     const { error } = await supabaseAdmin.from(TABLE).update({ sort_order: i }).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
+  revalidateTag(JOURNAL_TAG)
   return NextResponse.json({ success: true })
 }

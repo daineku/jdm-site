@@ -7,7 +7,7 @@ import '@/components/studio/studio.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getSiteSettings } from '@/lib/data'
-import { STUDIO_DESCRIPTION, STUDIO_TITLE, getBaseUrl } from '@/lib/seo'
+import { STUDIO_DESCRIPTION, STUDIO_TITLE, getBaseUrl, isProductionDeployment } from '@/lib/seo'
 import { getSocialLinks } from '@/lib/social'
 
 // Studio display face, self-hosted from app/fonts (SIL OFL). Committed file + next/font/local
@@ -24,10 +24,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()
   const baseUrl  = getBaseUrl()
 
-  // Non-production Vercel deployments (previews, branch deploys) are noindexed.
-  // Production is determined by VERCEL_ENV=production or absence of VERCEL_ENV (local).
-  const isNonProduction =
-    process.env.VERCEL_ENV !== undefined && process.env.VERCEL_ENV !== 'production'
+  // Non-production Vercel deployments (previews, branch deploys) are noindexed; robots.txt
+  // disallows them too (lib/seo.ts). Production emits no robots meta of its own: indexable is
+  // the default, and a page that opts out (404, admin, legacy archive) then carries one
+  // directive instead of two conflicting ones.
+  const production = isProductionDeployment()
 
   // Studio defaults come from code (lib/seo.ts), never from the legacy site_settings SEO fields,
   // so a stale JDM description or OG image cannot reach a studio page. Pages override as needed.
@@ -41,9 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: STUDIO_DESCRIPTION,
     applicationName: 'DAINEKU',
-    robots: isNonProduction
-      ? { index: false, follow: false }
-      : { index: true, follow: true },
+    ...(production ? {} : { robots: { index: false, follow: false } }),
     // Search Console verification — content= value only, rendered as meta tag
     ...(settings?.search_console_verification
       ? { verification: { google: settings.search_console_verification } }

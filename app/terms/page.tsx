@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import LegalPage, { type LegalSection } from '@/components/studio/LegalPage'
+import { LEGAL_UPDATED } from '@/lib/seo'
 
 // Production draft (October 2026). Deliberately names no legal entity, address or governing law —
 // none has been provided. See the owner note in components/studio/LegalPage.tsx.
@@ -123,7 +124,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title={TITLE}
-      updated="2026-10-13"
+      updated={LEGAL_UPDATED.terms}
       intro="These terms apply to your use of daineku.com, the website of DAINEKU, a studio developing real-time simulations, interactive software, digital environments and cinematic content."
       sections={sections}
       other={{ href: '/privacy', label: 'Privacy Policy' }}

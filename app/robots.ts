@@ -1,18 +1,14 @@
-import { MetadataRoute } from 'next'
-import { getBaseUrl } from '@/lib/seo'
+import type { MetadataRoute } from 'next'
+import { getBaseUrl, isProductionDeployment, robotsRules } from '@/lib/seo'
 
+/**
+ * Production: everything crawlable except the API routes. `/_next/` is deliberately not blocked —
+ * Google renders pages with the JavaScript, CSS and optimised images served under it, and
+ * blocking them makes the rendered page look empty to the indexer. Query-parameter variants of
+ * the archive carry a canonical to /archive instead of a robots rule. The admin path is secret:
+ * listing it here would publish it, so it is noindexed through its own metadata.
+ * Previews and branch deployments: nothing crawlable, no sitemap (see lib/seo.ts).
+ */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = getBaseUrl()
-  return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        // Query-param filter pages are crawlable but not in sitemap.
-        // Admin path is unguessable but explicitly disallowed as defence-in-depth.
-        disallow: ['/api/', '/_next/'],
-      },
-    ],
-    sitemap: `${baseUrl}/sitemap.xml`,
-  }
+  return robotsRules(isProductionDeployment(), getBaseUrl())
 }

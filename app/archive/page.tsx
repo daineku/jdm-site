@@ -2,15 +2,23 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import MasonryGallery from '@/components/MasonryGallery'
 import { getBrands } from '@/lib/data'
+import { legacyRobots } from '@/lib/seo'
 
 // The original Daineku homepage feed — curated JDM photos, unchanged behaviour
 // (manual first 6, shuffled remainder, infinite scroll), now living at /archive.
 // Brand filter: /archive?brand=<slug>. Legacy /?brand=<slug> redirects here (next.config.ts).
 
+const TITLE = 'JDM Archive'
+const DESCRIPTION = 'The Daineku editorial archive — a hand-curated feed of Japanese performance cars.'
+
+// Legacy route: live, but out of the studio's index and sitemap by default (lib/seo.ts).
 export const metadata: Metadata = {
-  title: 'JDM Archive',
-  description: 'The Daineku editorial archive — a hand-curated feed of Japanese performance cars.',
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: '/archive' },
+  robots: legacyRobots(),
+  openGraph: { type: 'website', url: '/archive', siteName: 'DAINEKU', title: `${TITLE} | DAINEKU`, description: DESCRIPTION },
+  twitter: { card: 'summary', title: `${TITLE} | DAINEKU`, description: DESCRIPTION },
 }
 
 type Props = { searchParams: Promise<{ brand?: string | string[] }> }
