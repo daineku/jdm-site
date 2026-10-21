@@ -13,8 +13,8 @@ import type { SocialLink } from '@/lib/social'
  * from site_settings are deliberately not read, so old JDM navigation can never
  * reappear here. Brand filtering lives on /archive.
  *
- * Admin routes never render this: middleware.ts sets x-is-admin and the root
- * layout skips the header server-side.
+ * Admin routes never render this: the header belongs to the (studio) route group's layout
+ * (components/studio/StudioShell.tsx), which the admin route is outside of.
  */
 export default function Header({ socials }: { socials: SocialLink[] }) {
   const pathname = usePathname()

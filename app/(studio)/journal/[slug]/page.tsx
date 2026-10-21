@@ -7,8 +7,9 @@ import { getPublishedArticle } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
 import { JsonLd, articleNode, breadcrumbNode, organizationNode } from '@/lib/jsonld'
 
-// Read per request: edits and unpublishing in the admin take effect immediately.
-export const dynamic = 'force-dynamic'
+// Rendered on first request and then served statically; purged the moment the admin edits or
+// unpublishes (the journal reads are tagged, lib/journal.ts) and refreshed every five minutes.
+export const revalidate = 300
 
 type Props = { params: Promise<{ slug: string }> }
 

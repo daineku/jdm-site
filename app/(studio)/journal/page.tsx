@@ -7,8 +7,9 @@ import { editorialOrder, getPublishedArticles } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
 import { JsonLd, articleNode, blogId, breadcrumbNode, orgId, organizationNode } from '@/lib/jsonld'
 
-// Read per request so an article published in the admin appears immediately — no rebuild.
-export const dynamic = 'force-dynamic'
+// Statically generated; purged the moment the admin publishes, edits or unpublishes (the
+// journal reads are tagged, lib/journal.ts) and refreshed every five minutes otherwise.
+export const revalidate = 300
 
 const TITLE = 'Articles | DAINEKU'
 const DESCRIPTION = 'Development notes, technical experiments and the decisions behind DAINEKU’s real-time simulation, environment and cinematic work.'

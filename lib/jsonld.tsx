@@ -1,6 +1,7 @@
 import type { Project } from './projects'
 import type { Article } from './journalShared'
 import { STUDIO_DESCRIPTION } from './seo'
+import { SERVICES } from '@/components/studio/content'
 
 /**
  * schema.org JSON-LD for the studio pages. One Organization node (`#organization`) is declared
@@ -19,6 +20,7 @@ export function organizationNode(base: string, sameAs: string[] = []): Node {
     '@type': 'Organization',
     '@id': orgId(base),
     name: 'DAINEKU',
+    alternateName: ['Daineku', 'Daineku Studio'],
     url: `${base}/`,
     logo: { '@type': 'ImageObject', url: `${base}/images/brand/logo.png` },
     description: STUDIO_DESCRIPTION,
@@ -47,8 +49,25 @@ export function webSiteNode(base: string): Node {
 }
 
 /**
+ * The capabilities the homepage offers under "What We Build", one Service each, provided by the
+ * studio. Built from the same content constant as the visible cards so the two cannot drift.
+ */
+export function serviceNodes(base: string): Node[] {
+  return SERVICES.items.map(item => ({
+    '@type': 'Service',
+    '@id': `${base}/#service-${item.n}`,
+    name: item.title,
+    serviceType: item.title,
+    description: `${item.body} ${item.deliverables.join('; ')}.`,
+    provider: { '@id': orgId(base) },
+    url: `${base}/#services`,
+  }))
+}
+
+/**
  * A studio project. The Kanjo is a racing simulation in development, so it is a VideoGame
- * (a CreativeWork and SoftwareApplication) created by the studio — not client work.
+ * (a CreativeWork and SoftwareApplication) created by the studio — not client work. Its `url`
+ * is the project's own website: that site, not this page, is canonical for The Kanjo.
  */
 export function projectNode(base: string, project: Project): Node {
   return {
@@ -62,7 +81,6 @@ export function projectNode(base: string, project: Project): Node {
     creativeWorkStatus: project.statusLabel,
     image: `${base}${project.cover.desktop.src}`,
     ...(project.link ? { url: project.link.href } : {}),
-    mainEntityOfPage: `${base}/#work`,
     creator: { '@id': orgId(base) },
     author: { '@id': orgId(base) },
   }

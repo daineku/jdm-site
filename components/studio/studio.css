@@ -28,7 +28,7 @@
   --st-border-strong: rgba(255, 255, 255, 0.2);
   --st-border-ink: rgba(13, 19, 15, 0.14);
 
-  --st-font-display: var(--font-display), 'Space Grotesk', system-ui, sans-serif;
+  --st-font-display: 'Space Grotesk', system-ui, sans-serif;
   --st-font-body: 'Manrope', system-ui, sans-serif;
 
   --st-hdr: 76px;

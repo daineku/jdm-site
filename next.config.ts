@@ -27,6 +27,15 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // Self-hosted body font under public/fonts: cache forever (the file is renamed if it changes).
+  async headers() {
+    return [
+      {
+        source: '/fonts/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ]
+  },
   // Increase body size limit for API routes (upload route safety net)
   experimental: {
     serverActions: {

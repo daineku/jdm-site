@@ -12,6 +12,7 @@ export default function StudioHero() {
           alt="A night-time city: a building half-resolved as a wireframe beside finished towers, and a white sports car on a wet, curving elevated road."
           fill
           priority
+          fetchPriority="high"
           quality={85}
           sizes="100vw"
           className="st-hero__img"

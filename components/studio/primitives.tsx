@@ -58,55 +58,6 @@ export function ArtDirectedCover({
 }
 
 /**
- * Shows an exact source-pixel region of an image inside a frame.
- * The frame's CSS aspect-ratio must equal region.w / region.h; the crop is then
- * identical at every size, so overlay positions (annotations) stay locked to the
- * picture. `frameVw`/`frameMaxPx` describe the frame's rendered width so the
- * browser can pick a suitable source from the optimizer.
- */
-export function Crop({
-  src,
-  alt,
-  region,
-  className = '',
-  frameVw,
-  frameMaxPx,
-  children,
-}: {
-  src: StaticImageData
-  alt: string
-  region: { x: number; y: number; w: number; h: number }
-  className?: string
-  frameVw: number
-  frameMaxPx: number
-  children?: ReactNode
-}) {
-  const scale = src.width / region.w
-  const imgStyle: CSSProperties = {
-    width: `${scale * 100}%`,
-    left: `${(-region.x / region.w) * 100}%`,
-    top: `${(-region.y / region.h) * 100}%`,
-  }
-  const sizes = `(max-width: 899px) ${Math.round(100 * scale)}vw, min(${Math.round(frameVw * scale)}vw, ${Math.round(frameMaxPx * scale)}px)`
-
-  return (
-    <div className={`st-crop ${className}`}>
-      <div className="st-crop__zoom">
-        <Image
-          src={src}
-          alt={alt}
-          sizes={sizes}
-          className="st-crop__img"
-          style={imgStyle}
-          draggable={false}
-        />
-      </div>
-      {children}
-    </div>
-  )
-}
-
-/**
  * A whole image covering its frame, framed by object-position alone (the source is never
  * re-cut). Used for project artwork whose owner has fixed its composition. Desktop and
  * mobile framing are separate because the frame changes width, not just size, below 900px.

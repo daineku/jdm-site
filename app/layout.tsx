@@ -1,24 +1,15 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import Script from 'next/script'
-import localFont from 'next/font/local'
 import './globals.css'
 import '@/components/studio/studio.css'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 import { getSiteSettings } from '@/lib/data'
 import { STUDIO_DESCRIPTION, STUDIO_TITLE, getBaseUrl, isProductionDeployment } from '@/lib/seo'
-import { getSocialLinks } from '@/lib/social'
 
-// Studio display face, self-hosted from app/fonts (SIL OFL). Committed file + next/font/local
-// rather than next/font/google (whose 15.3.6 loader crashes on current Google responses).
-const display = localFont({
-  src: './fonts/SpaceGrotesk-Variable-latin.woff2',
-  weight: '300 700',
-  variable: '--font-display',
-  display: 'swap',
-})
-// Body face (Manrope) is declared once in globals.css under its real family name.
+// Both typefaces are self-hosted from public/fonts (SIL OFL) and declared in globals.css under
+// their real family names. The two Latin files every page uses are preloaded in <head> below,
+// so the browser fetches them with the HTML instead of after the stylesheet has been parsed.
+// (next/font/local was used for the display face before; its preload only ever reached the
+// browser as a response header on dynamically rendered pages, which these no longer are.)
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()
@@ -64,6 +55,11 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+/**
+ * Root layout: document, fonts and analytics only. It reads no request data, so every public
+ * page can be statically generated and served from the CDN. The studio header and footer live
+ * in app/(studio)/layout.tsx; the admin route (app/[adminPath]) renders without them.
+ */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSiteSettings()
   // GA4: only load when measurement ID is set and matches the expected format
@@ -71,19 +67,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? settings.ga4_measurement_id
     : null
 
-  // Middleware sets x-is-admin for the admin route.
-  // Read server-side — no client flicker, no DOM hacks.
-  const headersList = await headers()
-  const isAdmin = headersList.get('x-is-admin') === '1'
-
-  const socials = getSocialLinks(settings)
-
   return (
-    <html lang="en" className={display.variable}>
+    <html lang="en">
+      <head>
+        <link rel="preload" href="/fonts/SpaceGrotesk-Variable-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/Manrope-Variable-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body>
-        {!isAdmin && <Header socials={socials} />}
-        {isAdmin ? children : <div id="main" tabIndex={-1} style={{ outline: 'none' }}>{children}</div>}
-        {!isAdmin && <Footer />}
+        {children}
         {/* GA4 — afterInteractive so it never blocks page render */}
         {ga4Id && (
           <>

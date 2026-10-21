@@ -16,6 +16,7 @@
     "test:unit": "node --test lib/contact.test.ts lib/contactDelivery.test.ts lib/journal.test.ts lib/projects.test.ts lib/seo.test.ts lib/support.test.ts",
     "test:smoke": "playwright test",
     "media:project": "node scripts/prepare-project-media.mjs",
+    "media:brand": "node scripts/prepare-brand-crops.mjs",
     "test:contact-delivery": "node --test lib/contactDelivery.test.ts",
     "icons": "node scripts/build-favicons.mjs"
   },

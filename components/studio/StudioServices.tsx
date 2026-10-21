@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
-import hero from '@/public/images/brand/hero.png'
+import urban from '@/public/images/brand/hero-crop-urban.jpg'
+import frame from '@/public/images/brand/hero-crop-frame.jpg'
 import { SERVICES } from './content'
-import { Crop, SectionHeading, delay } from './primitives'
+import { Cover, SectionHeading, delay } from './primitives'
 import { SimulationDiagram } from './visuals'
 
-// Regions of the key visual (1672×941 source px). Each frame is 4:5 and shows a different subject.
+// Two details of the key visual, each cut from hero.png as its own 4:5 file
+// (scripts/prepare-brand-crops.mjs) so the cards never re-download the whole hero.
 // These are studio artwork, not project captures — The Kanjo's own image lives in SelectedWork.
-const URBAN = { x: 990, y: 0, w: 432, h: 540 }
-const FRAME = { x: 1200, y: 400, w: 433, h: 541 }
+const FRAME_SIZES = '(max-width: 899px) 100vw, min(30vw, 420px)'
 
 export default function StudioServices() {
   // Media follow the three services: simulation → diagram, spatial design → lit scene, cinematic → a graded frame.
@@ -17,16 +18,16 @@ export default function StudioServices() {
       <span className="st-frame-tag st-frame-tag--tl">Fig. 01</span>
       <span className="st-frame-tag st-frame-tag--br">Path · velocity</span>
     </div>,
-    <Crop key="urban" src={hero} region={URBAN} className="st-worlds__media st-ticks" frameVw={30} frameMaxPx={420}
+    <Cover key="urban" src={urban} position="50% 50%" sizes={FRAME_SIZES} className="st-worlds__media st-ticks"
       alt="Detail of the studio key visual: lit towers rising over the city at dusk.">
       <span className="st-frame-tag st-frame-tag--tl">Fig. 02</span>
       <span className="st-frame-tag st-frame-tag--br">Scene · light</span>
-    </Crop>,
-    <Crop key="frame" src={hero} region={FRAME} className="st-worlds__media st-ticks" frameVw={30} frameMaxPx={420}
+    </Cover>,
+    <Cover key="frame" src={frame} position="50% 50%" sizes={FRAME_SIZES} className="st-worlds__media st-ticks"
       alt="A cinematic frame from the studio key visual: a white sports car seen from behind, tail lights reflected in wet asphalt.">
       <span className="st-frame-tag st-frame-tag--tl">Fig. 03</span>
       <span className="st-frame-tag st-frame-tag--br">Frame · grade</span>
-    </Crop>,
+    </Cover>,
   ]
 
   return (
