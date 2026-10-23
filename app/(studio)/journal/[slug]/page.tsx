@@ -5,9 +5,11 @@ import ArticleView from '@/components/studio/ArticleView'
 import { Arrow } from '@/components/studio/primitives'
 import { getPublishedArticle } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
+import { JsonLd, articleNode, breadcrumbNode, organizationNode } from '@/lib/jsonld'
 
-// Read per request: edits and unpublishing in the admin take effect immediately.
-export const dynamic = 'force-dynamic'
+// Rendered on first request and then served statically; purged the moment the admin edits or
+// unpublishes (the journal reads are tagged, lib/journal.ts) and refreshed every five minutes.
+export const revalidate = 300
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -30,6 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images,
       ...(article.published_at ? { publishedTime: article.published_at } : {}),
       modifiedTime: article.updated_at,
+      authors: ['DAINEKU'],
+      ...(article.category ? { section: article.category } : {}),
     },
     twitter: { card: 'summary_large_image', title, description, images: article.cover_image_url ? [article.cover_image_url] : ['/images/brand/og.jpg'] },
   }
@@ -40,22 +44,15 @@ export default async function ArticlePage({ params }: Props) {
   if (!article) notFound()
 
   const base = getBaseUrl()
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: article.title,
-    description: article.excerpt || undefined,
-    datePublished: article.published_at ?? undefined,
-    dateModified: article.updated_at,
-    mainEntityOfPage: `${base}/journal/${article.slug}`,
-    ...(article.cover_image_url ? { image: [article.cover_image_url] } : {}),
-    author: { '@type': 'Organization', name: 'DAINEKU', url: `${base}/` },
-    publisher: { '@type': 'Organization', name: 'DAINEKU', logo: { '@type': 'ImageObject', url: `${base}/images/brand/logo.png` } },
-  }
+  const graph = [
+    organizationNode(base),
+    breadcrumbNode(base, [{ name: 'DAINEKU', path: '/' }, { name: 'Articles', path: '/journal' }, { name: article.title, path: `/journal/${article.slug}` }]),
+    articleNode(base, article),
+  ]
 
   return (
     <main className="studio st-main">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
+      <JsonLd nodes={graph} />
       <ArticleView article={article} />
       <div className="st-container">
         <p className="st-article__back">

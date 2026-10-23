@@ -31,8 +31,11 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'mobile', use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } } },
+    { name: 'desktop', testIgnore: /seo-articles/, use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    { name: 'mobile', testIgnore: /seo-articles/, use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } } },
+    // The editorial lifecycle creates and deletes an article; it runs once the parallel suites
+    // (whose journal tests assume exclusive CMS state) have finished.
+    { name: 'seo-articles', testMatch: /seo-articles/, dependencies: ['desktop', 'mobile'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: [
     {
@@ -51,7 +54,8 @@ export default defineConfig({
       env: { MOCK_BACKEND_PORT: String(BACKEND_PORT), MOCK_SERVICE_KEY: 'smoke-service-key' },
     },
     {
-      command: `npx next start -p ${PORT}`,
+      // The data cache is cleared first: see tests/reset-data-cache.mjs.
+      command: `node tests/reset-data-cache.mjs && npx next start -p ${PORT}`,
       url: `http://localhost:${PORT}/robots.txt`,
       reuseExistingServer: false,
       timeout: 120_000,

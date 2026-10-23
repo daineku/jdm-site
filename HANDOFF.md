@@ -477,22 +477,49 @@ These chains are implemented in `lib/seo.ts` (`resolveSeoTitle`, `resolveSeoDesc
 
 Query-param filter pages (`/?brand=slug`) have no canonical tag — they are not in the sitemap and are not separate routes.
 
-### Indexing policy
+### Indexing policy (October 2026 — technical SEO pass)
 
 | Page type | Indexed? | In sitemap? |
 |---|---|---|
-| Homepage | ✅ | ✅ |
-| Published model pages | ✅ | ✅ |
-| Admin panel | ❌ noindex | ❌ |
-| Unpublished models | ❌ 404 (notFound()) | ❌ |
-| Brand filter (`?brand=x`) | Crawlable, no canonical | ❌ |
-| Vercel preview deployments | ❌ noindex (VERCEL_ENV !== 'production') | ❌ |
-| Future category pages | ✅ when `is_published=true` | ✅ when built |
-| Future brand pages | ✅ when route exists | ✅ when built |
+| Homepage `/` | ✅ | ✅ (no `lastmod`: it changes with deploys, not content) |
+| `/journal` | ✅ once an article is published; `noindex, follow` while empty | ✅ only when ≥ 1 article |
+| `/journal/[slug]` published | ✅ | ✅ `lastmod` = `updated_at` |
+| Drafts / scheduled | ❌ 404 until `published_at` ≤ now | ❌ |
+| `/privacy`, `/terms` | ✅ | ✅ `lastmod` = `LEGAL_UPDATED` (lib/seo.ts, shared with the pages) |
+| Legacy archive: `/archive`, `/cars/*`, `/builds*`, `/parts*` | ❌ `noindex, follow` (routes and data intact, 200) | ❌ |
+| Legacy archive with `LEGACY_ARCHIVE_INDEXABLE=true` | ✅ | ✅ |
+| Admin panel | ❌ noindex (own metadata; the path is never listed in robots.txt) | ❌ |
+| 404s (`app/not-found.tsx`) | ❌ noindex, real 404 status | ❌ |
+| Vercel previews / branch deploys | ❌ noindex meta + robots.txt `Disallow: /` + Vercel's own `X-Robots-Tag: noindex` | ❌ (no sitemap advertised) |
 
-### Staging / preview noindex
+**robots.txt** (`app/robots.ts` → `robotsRules` in `lib/seo.ts`): production allows everything except `/api/`. `/_next/` is **not** blocked — Google renders pages with the JS, CSS and `/_next/image` responses under it. Non-production disallows `/`.
 
-`app/layout.tsx` checks `process.env.VERCEL_ENV`. Any Vercel deployment where `VERCEL_ENV !== 'production'` gets `robots: { index: false, follow: false }`. Local dev has no `VERCEL_ENV` set and is not indexed by crawlers anyway. Production Vercel sets `VERCEL_ENV=production` automatically.
+**Sitemap** (`app/sitemap.ts`): studio pages only, canonical absolute URLs, real timestamps only (never "now"). Built per request, but the reads behind it are cached (below) so a request costs no query while the cache is warm.
+
+**Structured data** (`lib/jsonld.tsx`): one `@graph` per page with a single `Organization` (`#organization`) that every other node references by `@id`. Homepage: Organization + WebSite + a `VideoGame` node per visible project (The Kanjo, the studio's own racing simulation in development). `/journal`: Blog + BreadcrumbList. Articles: BlogPosting + BreadcrumbList. Nothing is stated that is not visible on the page (no ratings, reviews, addresses, prices).
+
+**Soft 404 fixed**: `app/cars/[slug]/loading.tsx` was removed. A loading boundary makes the App Router flush a 200 shell before `notFound()` runs, so unknown car slugs answered 200 with a 404 body.
+
+**Public read caching** (`lib/data.ts`, `lib/journal.ts`): `getSiteSettings`, `getPublishedArticles` and `getPublishedArticle` sit in the Next.js data cache (`unstable_cache`, 5 minutes, tags `site-settings` / `journal`) and are purged by the admin APIs on every write (`revalidateTag`). Publishing is therefore still immediate, while a normal page request makes no Supabase round trip. An article that becomes public purely by its scheduled `published_at` (no admin write at that moment) appears within the 5-minute window.
+
+**Tests**: `tests/seo.spec.ts` (Playwright, HTTP-level + JavaScript-disabled browser: robots, sitemap resolution, metadata, JSON-LD validity, 404 statuses, legacy noindex, internal links, crawlable assets), `tests/seo-articles.spec.ts` (draft → published → edited → deleted as a crawler sees it; its own Playwright project, run after the parallel suites) and `lib/seo.test.ts` (`npm run test:seo`: preview vs production rules).
+
+### Rendering and performance (October 2026)
+
+| Route | Rendering | Why |
+|---|---|---|
+| `/`, `/journal`, `/privacy`, `/terms` | Static (ISR, `revalidate = 300`) | No request data is read anywhere above them; the admin APIs purge them at once via the tagged reads (`site-settings`, `journal`) |
+| `/journal/[slug]` | Rendered on first request, then cached (ISR) | Purged on edit/unpublish like the index |
+| `/journal/feed.xml`, `/sitemap.xml` | Dynamic, cached reads | Cheap; reflect admin writes immediately |
+| Legacy archive routes, admin, APIs | Dynamic | Unchanged |
+
+- **No loader anywhere.** The server HTML carries the whole page; `Reveal.tsx` only arms the scroll-reveal *after* mount, for elements still below the fold, and never under `prefers-reduced-motion`. The mobile menu locks scroll only while open.
+- **Hero (LCP)**: `StudioHero` keeps the static `hero.png` through `next/image` (`priority`, `fetchPriority="high"`, `sizes="100vw"`, AVIF/WebP). The source is 1672 × 941 px; there is no larger master, so wider candidates are capped by the optimizer.
+- **Capability cards** show two details of the hero from their own files (`public/images/brand/hero-crop-{urban,frame}.jpg`, cut by `npm run media:brand`) instead of scaling the whole hero inside the frame, which used to download the full hero two more times (96–114 KB each in Lighthouse).
+- **Fonts**: both faces live in `public/fonts/` and are declared in `app/globals.css`; the root layout preloads the two Latin files and `next.config.ts` serves `/fonts/` immutable (rename a file if a font ever changes). Manrope's Latin-ext and Cyrillic subsets load on demand through `unicode-range`. `next/font/local` was dropped: its preload only reached the browser as a `Link` response header on dynamically rendered pages, which the static pages no longer emit, and it produced no usable fallback metrics for these variable files.
+- **Smoke suite**: `tests/reset-data-cache.mjs` clears the data cache and the prerendered `/` and `/journal` before `next start`, because `next build` runs without the smoke env (the contact form, the mock backend) while Vercel builds and serves with one env.
+
+**Owner actions outside the repo**: `www.daineku.com` resolves to Vercel but has no certificate (TLS handshake fails) — add the `www` domain to the Vercel project and redirect it to the apex. Search Console: verify the property (admin → Settings → Search Console verification, or DNS), submit `https://daineku.com/sitemap.xml`, and request removal/inspection of any previously indexed `/cars/*`, `/builds/*`, `/archive` URLs as they turn `noindex`.
 
 ### OG / Twitter card completeness
 
@@ -796,11 +823,9 @@ Watermark failure is a hard 500 — no silent clean-public fallback. `url` and `
 
 Clicking a photo preview card in the admin gallery calls `/api/admin/original-url?photo_id=…` (requires `x-admin-secret`), receives a signed URL valid for 15 minutes, and opens it in a new tab. No public R2 URL for originals is ever embedded in the admin UI.
 
-### Admin header suppression (v9b)
+### Admin header suppression (v9b → replaced October 2026)
 
-- `middleware.ts` sets `x-is-admin: 1` on responses for paths matching `/$ADMIN_SECRET_PATH`
-- `app/layout.tsx` reads that header via `await headers()` and skips `<Header />` server-side
-- No client-side MutationObserver or DOM hacks. No flicker.
+Historically `middleware.ts` flagged the admin request and `app/layout.tsx` read it with `headers()`. That made **every** page dynamic (no CDN caching, a Supabase round trip per request). Since the October 2026 performance pass the public pages live in the route group `app/(studio)/` whose layout renders the header/footer (`components/studio/StudioShell.tsx`); `app/[adminPath]/` is outside the group and gets neither. There is no middleware any more, the root layout reads no request data, and `/`, `/journal`, `/privacy`, `/terms` are statically generated (ISR, `revalidate = 300`, purged at once by the admin APIs through the tagged reads). See §16.
 
 ### Migrations (v9)
 
@@ -1010,9 +1035,9 @@ The legacy archive tables pre-date this work and run with RLS disabled (see `mig
 
 `SpeedometerLoader` is deleted. `MasonryGallery` renders as soon as the first batch arrives (the fake progress interval and 250 ms delay are gone); first load shows a static skeleton; the infinite-scroll sentinel is an empty 96 px div. `fetchedCountRef` / `isFetchingRef` untouched.
 
-### Admin header suppression (middleware)
+### Admin header suppression (middleware) — superseded
 
-`middleware.ts` forwards `x-is-admin: 1` on the **request** (`NextResponse.next({ request: { headers } })`) for `/<ADMIN_SECRET_PATH>` and its sub-paths, and always deletes any client-supplied `x-is-admin` first. Previously it set the flag on the *response*: that only worked because the self-hosted Next router copies middleware response headers into the request (not a documented contract), any visitor could send `x-is-admin: 1` to strip the public header/footer, and the flag leaked to clients. Admin auth (`isAuthed`, `x-admin-secret`) is unchanged.
+The `x-is-admin` middleware described in earlier versions is gone (October 2026): the public header/footer are provided by the `(studio)` route-group layout, which the admin segment is simply outside of. A client-sent `x-is-admin` header has no meaning anywhere. Admin auth (`isAuthed`, `x-admin-secret`) is unchanged.
 
 ### Quality gates (all enforced)
 

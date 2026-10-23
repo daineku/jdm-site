@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
+import { SITE_SETTINGS_TAG } from '@/lib/data'
 import { SiteSettingsUpdateSchema } from '@/lib/validation/settings'
 
 export async function GET(req: NextRequest) {
@@ -28,5 +30,7 @@ export async function PUT(req: NextRequest) {
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Public pages read the settings row through the data cache (lib/data.ts); purge it now.
+  revalidateTag(SITE_SETTINGS_TAG)
   return NextResponse.json({ settings: data })
 }

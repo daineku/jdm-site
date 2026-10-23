@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isAuthed } from '@/lib/adminAuth'
-import { TABLE } from '@/lib/journal'
+import { JOURNAL_TAG, TABLE } from '@/lib/journal'
 import {
   ArticleCreateSchema,
   ArticleDeleteSchema,
@@ -10,8 +11,9 @@ import {
 } from '@/lib/validation/journal'
 
 // Studio Journal — admin CRUD. Same auth as every other admin route (x-admin-secret);
-// writes use the service-role client, which is server-only. Nothing needs revalidating:
-// the homepage, /journal, /journal/[slug] and the sitemap all read per request.
+// writes use the service-role client, which is server-only. Every successful write purges the
+// journal data cache (lib/journal.ts), so the homepage, /journal, /journal/[slug], the feed and
+// the sitemap reflect it on their next request.
 
 const unauthorized = () => NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status })
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin.from(TABLE).insert(article).select().single()
   if (error) return dbError(error, article.slug)
+  revalidateTag(JOURNAL_TAG)
   return NextResponse.json({ article: data }, { status: 201 })
 }
 
@@ -76,6 +79,7 @@ export async function PUT(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin.from(TABLE).update(updates).eq('id', id).select().single()
   if (error) return dbError(error, updates.slug)
+  revalidateTag(JOURNAL_TAG)
   return NextResponse.json({ article: data })
 }
 
@@ -89,5 +93,6 @@ export async function DELETE(req: NextRequest) {
   const { data, error } = await supabaseAdmin.from(TABLE).delete().eq('id', parsed.data.id).select('slug')
   if (error) return dbError(error)
   if (!data?.length) return bad('Article not found', 404)
+  revalidateTag(JOURNAL_TAG)
   return NextResponse.json({ success: true })
 }

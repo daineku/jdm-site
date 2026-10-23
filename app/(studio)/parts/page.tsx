@@ -2,18 +2,23 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getPublishedPartCategories, getSiteSettings } from '@/lib/data'
-import { resolveSeoTitle, getBaseUrl } from '@/lib/seo'
+import { resolveSeoTitle, getBaseUrl, legacyRobots } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()
   const title = resolveSeoTitle('Aftermarket Parts', 'Aftermarket Parts', settings)
+  const description = 'Browse curated aftermarket parts by category in the Daineku archive.'
   const canonical = `${getBaseUrl()}/parts`
+  // Legacy route: live, but out of the studio's index and sitemap by default (lib/seo.ts).
   return {
     title,
+    description,
     alternates: { canonical },
-    openGraph: { type: 'website', url: canonical, title },
+    robots: legacyRobots(),
+    openGraph: { type: 'website', url: canonical, siteName: 'DAINEKU', title: `${title} | DAINEKU`, description },
+    twitter: { card: 'summary', title: `${title} | DAINEKU`, description },
   }
 }
 

@@ -5,46 +5,51 @@ import Reveal from '@/components/studio/Reveal'
 import { JOURNAL } from '@/components/studio/content'
 import { editorialOrder, getPublishedArticles } from '@/lib/journal'
 import { getBaseUrl } from '@/lib/seo'
+import { JsonLd, articleNode, blogId, breadcrumbNode, orgId, organizationNode } from '@/lib/jsonld'
 
-// Read per request so an article published in the admin appears immediately — no rebuild.
-export const dynamic = 'force-dynamic'
+// Statically generated; purged the moment the admin publishes, edits or unpublishes (the
+// journal reads are tagged, lib/journal.ts) and refreshed every five minutes otherwise.
+export const revalidate = 300
 
 const TITLE = 'Articles | DAINEKU'
 const DESCRIPTION = 'Development notes, technical experiments and the decisions behind DAINEKU’s real-time simulation, environment and cinematic work.'
 
-export const metadata: Metadata = {
-  title: { absolute: TITLE },
-  description: DESCRIPTION,
-  alternates: { canonical: '/journal', types: { 'application/rss+xml': '/journal/feed.xml' } },
-  openGraph: { type: 'website', url: '/journal', siteName: 'DAINEKU', title: TITLE, description: DESCRIPTION, images: ['/images/brand/og.jpg'] },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/images/brand/og.jpg'] },
+export async function generateMetadata(): Promise<Metadata> {
+  // Until the first article is published the index is an empty landing page: crawlable (so the
+  // link from the navigation resolves) but not indexable, and absent from the sitemap.
+  const empty = (await getPublishedArticles()).length === 0
+  return {
+    title: { absolute: TITLE },
+    description: DESCRIPTION,
+    alternates: { canonical: '/journal', types: { 'application/rss+xml': '/journal/feed.xml' } },
+    ...(empty ? { robots: { index: false, follow: true } } : {}),
+    openGraph: { type: 'website', url: '/journal', siteName: 'DAINEKU', title: TITLE, description: DESCRIPTION, images: ['/images/brand/og.jpg'] },
+    twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/images/brand/og.jpg'] },
+  }
 }
 
 export default async function JournalIndex() {
   const articles = editorialOrder(await getPublishedArticles())
   const [lead, ...rest] = articles
   const base = getBaseUrl()
-  const jsonLd = lead && {
-    '@context': 'https://schema.org',
-    '@type': 'Blog',
-    name: 'DAINEKU Journal',
-    url: `${base}/journal`,
-    description: DESCRIPTION,
-    publisher: { '@type': 'Organization', name: 'DAINEKU', url: `${base}/` },
-    blogPost: articles.map(a => ({
-      '@type': 'BlogPosting',
-      headline: a.title,
-      url: `${base}/journal/${a.slug}`,
-      ...(a.published_at ? { datePublished: a.published_at } : {}),
-      ...(a.cover_image_url ? { image: a.cover_image_url } : {}),
-    })),
-  }
+  const graph = lead && [
+    organizationNode(base),
+    breadcrumbNode(base, [{ name: 'DAINEKU', path: '/' }, { name: 'Articles', path: '/journal' }]),
+    {
+      '@type': 'Blog',
+      '@id': blogId(base),
+      name: 'DAINEKU Articles',
+      url: `${base}/journal`,
+      description: DESCRIPTION,
+      inLanguage: 'en-GB',
+      publisher: { '@id': orgId(base) },
+      blogPost: articles.map(a => articleNode(base, a)),
+    },
+  ]
 
   return (
     <main className="studio st-main">
-      {jsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
-      )}
+      {graph && <JsonLd nodes={graph} />}
       <section className="st-section st-article st-editorial" aria-labelledby="journal-title">
         <div className="st-container">
           <div className="st-heading st-heading--center st-section-head">

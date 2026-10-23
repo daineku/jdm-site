@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getModelBySlug, getModelPhotos, getModelBuilds, getModelAccessories, getModelVideos, getModelGames, getModelBlocks, getModelFitment, getModelCategories, getModelParts, getModelWheelSpecs, getSiteSettings, getModelBuildInstances } from '@/lib/data'
-import { resolveSeoTitle, resolveSeoDescription, resolveOgImages, getBaseUrl } from '@/lib/seo'
+import { resolveSeoTitle, resolveSeoDescription, resolveOgImages, getBaseUrl, legacyRobots } from '@/lib/seo'
 import CarPageClient from './CarPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -25,10 +25,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const images      = resolveOgImages(null, coverSrc, settings)
   const canonical   = `${getBaseUrl()}/cars/${slug}`
 
+  // Legacy route: live, but out of the studio's index and sitemap by default (lib/seo.ts).
   return {
     title,
     description,
     alternates: { canonical },
+    robots: legacyRobots(),
     openGraph: {
       type: 'article',
       url: canonical,

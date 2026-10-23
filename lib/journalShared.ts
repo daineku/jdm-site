@@ -20,7 +20,7 @@ export type Article = {
   updated_at: string
 }
 
-export type ArticleCard = Pick<Article, 'id' | 'slug' | 'title' | 'excerpt' | 'category' | 'cover_image_url' | 'cover_alt' | 'is_featured' | 'sort_order' | 'published_at'>
+export type ArticleCard = Pick<Article, 'id' | 'slug' | 'title' | 'excerpt' | 'category' | 'cover_image_url' | 'cover_alt' | 'is_featured' | 'sort_order' | 'published_at' | 'updated_at'>
 
 /** "12 October 2026" — British order, fixed time zone so server and client agree. */
 export function formatArticleDate(iso: string | null): string {

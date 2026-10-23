@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import LegalPage, { type LegalSection } from '@/components/studio/LegalPage'
+import { LEGAL_UPDATED } from '@/lib/seo'
 
 // Written from the implementation (October 2026): no cookies or browser storage on the public
 // site, no analytics configured, enquiries emailed via Resend and not stored, content in
@@ -135,7 +136,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title={TITLE}
-      updated="2026-10-13"
+      updated={LEGAL_UPDATED.privacy}
       intro="DAINEKU’s website is designed to collect as little as possible: there are no accounts, no cookies on the public site and no analytics. The only personal information it handles is what you choose to send in a project enquiry."
       sections={sections}
       other={{ href: '/terms', label: 'Terms of Use' }}

@@ -70,7 +70,7 @@ export function SimulationDiagram() {
           <path d="M 30 -3 L 35 0 L 30 3" fill="none" stroke={GOLD} strokeWidth={1.2 / c.s} />
         </g>
       ))}
-      <g fontFamily="var(--font-display), sans-serif" fontSize="9" letterSpacing="1.6" fill={IVORY} fillOpacity="0.55">
+      <g fontFamily="var(--st-font-display)" fontSize="9" letterSpacing="1.6" fill={IVORY} fillOpacity="0.55">
         <text x="118" y="456">T+0.0</text>
         <text x="180" y="384">T+0.5</text>
         <text x="240" y="318">T+1.0</text>
